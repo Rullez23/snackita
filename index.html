@@ -155,6 +155,11 @@
           <label for="fWa"><span data-t="wa">No. WhatsApp</span> <span class="opt" data-t="optional">(opsional)</span></label>
           <input id="fWa" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="08xxxxxxxxxx">
         </div>
+        <div class="field">
+          <label for="fAddr" data-t="addr">Alamat kirim</label>
+          <textarea id="fAddr" rows="3" maxlength="300" autocomplete="street-address" data-ph="addrPh" required></textarea>
+          <div class="err" id="eAddr"></div>
+        </div>
       </div>
       <div class="card" id="itemsCard">
         <h2 data-t="chooseQty">Pilih jumlah</h2>
@@ -286,7 +291,7 @@ const CONFIG = {
 <script>
 /* ---------- i18n ---------- */
 const T = {
-  id:{name:"Nama",wa:"No. WhatsApp",optional:"(opsional)",chooseQty:"Pilih jumlah",note:"Catatan",
+  id:{addr:"Alamat kirim",addrPh:"Jalan, no. rumah, RT/RW, kelurahan, kecamatan, kota, kode pos",errAddr:"Alamat kirim wajib diisi.",name:"Nama",wa:"No. WhatsApp",optional:"(opsional)",chooseQty:"Pilih jumlah",note:"Catatan",
       totalQty:"Total qty",submit:"Pesan",thanks:"Terima kasih, pesanan diterima!",orderNo:"No. pesanan",
       sendWa:"Kirim ke WhatsApp penjual",again:"Buat pesanan lain",adminLogin:"Login penjual",password:"Password",
       login:"Masuk",exportCsv:"Export CSV",settings:"Pengaturan",logout:"Keluar",sellerWa:"No. WhatsApp penjual (untuk tombol konfirmasi)",
@@ -299,7 +304,7 @@ const T = {
       loginErr:"Email atau password salah.",viewInv:"Lihat invoice",howPay:"Cara bayar: transfer sesuai total ke rekening berikut",back:"← Kembali",printPdf:"Cetak / Simpan PDF",shareWa:"Kirim via WA",
       invoice:"INVOICE",invNo:"No. Invoice",date:"Tanggal",billTo:"Kepada",product:"Produk",qty:"Qty",unitPrice:"Harga",subtotal:"Subtotal",
       payment:"Pembayaran",status:"Status",paidStamp:"LUNAS",unpaidStamp:"BELUM LUNAS",invWa:"Invoice",waMsg:"Halo, saya sudah pesan",perItem:"per",paidRev:"sudah dibayar"},
-  en:{name:"Name",wa:"WhatsApp number",optional:"(optional)",chooseQty:"Choose quantity",note:"Note",
+  en:{addr:"Shipping address",addrPh:"Street, house no., RT/RW, kelurahan, kecamatan, city, postcode",errAddr:"Please enter your shipping address.",name:"Name",wa:"WhatsApp number",optional:"(optional)",chooseQty:"Choose quantity",note:"Note",
       totalQty:"Total qty",submit:"Order",thanks:"Thank you, order received!",orderNo:"Order no.",
       sendWa:"Send to seller on WhatsApp",again:"Place another order",adminLogin:"Seller login",password:"Password",
       login:"Sign in",exportCsv:"Export CSV",settings:"Settings",logout:"Sign out",sellerWa:"Seller WhatsApp number (for the confirm button)",
@@ -419,15 +424,17 @@ function applyOpen(){
   $("orderForm").classList.toggle("closed",closed); $("submitBtn").disabled=closed;
 }
 $("fName").oninput=()=>$("eName").textContent="";
+$("fAddr").oninput=()=>$("eAddr").textContent="";
 
 $("orderForm").onsubmit = async e=>{
   e.preventDefault();
-  const name=$("fName").value.trim(), {q,c}=totals(); let ok=true;
+  const name=$("fName").value.trim(), address=$("fAddr").value.trim(), {q,c}=totals(); let ok=true;
   if(!name){$("eName").textContent=t("errName");ok=false}
+  if(!address){$("eAddr").textContent=t("errAddr");ok=false}
   if(q<1){$("eQty").textContent=t("errQty");ok=false}
-  if(!ok){(name?$("itemsCard"):$("fName")).scrollIntoView({behavior:"smooth",block:"center"});return}
+  if(!ok){(!name?$("fName"):!address?$("fAddr"):$("itemsCard")).scrollIntoView({behavior:"smooth",block:"center"});return}
   const items={}; CONFIG.items.forEach(i=>{ if(qty[i.id]>0) items[i.id]={name:i.name,qty:qty[i.id],price:price(i.id)} });
-  const order={name,wa:$("fWa").value.trim(),note:$("fNote").value.trim(),items,totalQty:q,totalCost:c,paid:false,done:false,lang:LANG};
+  const order={name,address,wa:$("fWa").value.trim(),note:$("fNote").value.trim(),items,totalQty:q,totalCost:c,paid:false,done:false,lang:LANG};
   const btn=$("submitBtn"); btn.disabled=true; btn.textContent=t("sending");
   try{
     const id=await Store.addOrder(order);
@@ -446,7 +453,7 @@ function showDone(id,o){
   const wa=(SETTINGS.sellerWa||"").replace(/\D/g,"");
   if(wa){
     const lines=Object.values(o.items).map(it=>`- ${it.name}: ${it.qty}`).join("\n");
-    const msg=`${t("waMsg")} (${no})\n${t("name")}: ${o.name}\n${lines}\n${t("totalQty")}: ${o.totalQty}\n${t("total")}: ${rp(o.totalCost)}`;
+    const msg=`${t("waMsg")} (${no})\n${t("name")}: ${o.name}\n${t("addr")}: ${o.address||"-"}\n${lines}\n${t("totalQty")}: ${o.totalQty}\n${t("total")}: ${rp(o.totalCost)}`;
     $("dWa").href="https://wa.me/"+wa+"?text="+encodeURIComponent(msg); $("dWa").classList.remove("hidden");
   } else $("dWa").classList.add("hidden");
   if(CONFIG.invoice?.paymentInfo){ $("dPayTxt").innerHTML=payHtml()+"\n<b>"+rp(o.totalCost)+"</b>"; $("dPay").classList.remove("hidden") }
@@ -517,7 +524,7 @@ function renderOrders(){
   const rows=list().filter(o=>{
     if(FILTER==="unpaid"&&o.paid)return false; if(FILTER==="paid"&&!o.paid)return false;
     if(FILTER==="open"&&o.done)return false; if(FILTER==="done"&&!o.done)return false;
-    return !q || (o.name||"").toLowerCase().includes(q) || orderNo(o.id).toLowerCase().includes(q);
+    return !q || (o.name||"").toLowerCase().includes(q) || (o.address||"").toLowerCase().includes(q) || orderNo(o.id).toLowerCase().includes(q);
   });
   if(!rows.length){$("orders").innerHTML=`<div class="empty">${t("noOrders")}</div>`;return}
   const fmt=new Intl.DateTimeFormat(LANG==="id"?"id-ID":"en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
@@ -529,6 +536,7 @@ function renderOrders(){
           <div class="meta">${orderNo(o.id)} · ${o.createdAt?fmt.format(new Date(o.createdAt)):""}${wa?` · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(o.wa)}</a>`:""}</div></div>
         <div class="amt">${rp(o.totalCost)}</div>
       </div>
+      ${o.address?`<div class="muted" style="margin-top:6px;white-space:pre-line">📍 ${esc(o.address)}</div>`:""}
       <div class="lines">${Object.values(o.items||{}).map(it=>`${esc(it.name)}: <b>${it.qty}</b>`).join(" · ")} · ${t("totalQty")}: <b>${o.totalQty}</b>
         ${o.note?`<div class="muted" style="margin-top:4px">“${esc(o.note)}”</div>`:""}</div>
       <div class="acts">
@@ -547,8 +555,8 @@ function renderOrders(){
   });
 }
 function exportCsv(){
-  const head=["Order No","Date","Name","WhatsApp",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Paid","Delivered","Note"];
-  const rows=list().map(o=>[orderNo(o.id),o.createdAt?new Date(o.createdAt).toISOString().replace("T"," ").slice(0,16):"",o.name,o.wa,
+  const head=["Order No","Date","Name","WhatsApp","Address",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Paid","Delivered","Note"];
+  const rows=list().map(o=>[orderNo(o.id),o.createdAt?new Date(o.createdAt).toISOString().replace("T"," ").slice(0,16):"",o.name,o.wa,o.address||"",
     ...CONFIG.items.map(i=>o.items?.[i.id]?.qty||0),o.totalQty,o.totalCost,o.paid?"Y":"N",o.done?"Y":"N",o.note||""]);
   const csv=[head,...rows].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv"}));
@@ -575,7 +583,7 @@ function showInvoice(o){
         <span class="stamp ${o.paid?"paid":"unpaid"}">${o.paid?t("paidStamp"):t("unpaidStamp")}</span></div>
     </div>
     <div class="inv-meta">
-      <div><div class="lbl">${t("billTo")}</div><b>${esc(o.name)}</b>${o.wa?`<br>${esc(o.wa)}`:""}</div>
+      <div><div class="lbl">${t("billTo")}</div><b>${esc(o.name)}</b>${o.wa?`<br>${esc(o.wa)}`:""}${o.address?`<div style="white-space:pre-line;margin-top:4px;font-size:13px">${esc(o.address)}</div>`:""}</div>
       <div style="text-align:right"><div class="lbl">${t("invNo")}</div><b>${invNo(o)}</b>
         <div class="lbl" style="margin-top:6px">${t("date")}</div>${dt}</div>
     </div>
@@ -590,7 +598,7 @@ function showInvoice(o){
   // WhatsApp share: admin → buyer's number; buyer → seller's number
   const target = IS_ADMIN ? (o.wa||"").replace(/\D/g,"").replace(/^0/,"62") : (SETTINGS.sellerWa||"").replace(/\D/g,"");
   if(target){
-    const msg=`*${t("invWa")} ${invNo(o)}*\n${t("date")}: ${dt}\n${t("billTo")}: ${o.name}\n\n`
+    const msg=`*${t("invWa")} ${invNo(o)}*\n${t("date")}: ${dt}\n${t("billTo")}: ${o.name}\n${t("addr")}: ${o.address||"-"}\n\n`
       + its.map(it=>`${it.name}\n  ${it.qty} x ${rp(it.price)} = ${rp(it.qty*it.price)}`).join("\n")
       + `\n\n${t("totalQty")}: ${o.totalQty}\n*${t("total")}: ${rp(o.totalCost)}*\n${t("status")}: ${o.paid?t("paidStamp"):t("unpaidStamp")}`
       + (I.paymentInfo?`\n\n${t("payment")}: ${I.paymentInfo}`:"");
