@@ -86,12 +86,46 @@
   .bdg.unpaid{background:#FCEBD0;color:#8A5A0B}
   .bdg.ready{background:#F3E8FF;color:#6B2FB3}
   .bdg.done{background:#E8EEF9;color:#2A4F9A}
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:2px 0 8px;width:100%}
+  .seg button{flex:1;border:0;background:#fff;padding:8px 2px;font-size:12.5px;cursor:pointer;color:var(--muted);border-left:1px solid var(--line)}
+  .seg button:first-child{border-left:0}
+  .seg button.past{background:#F4F1EC;color:var(--ink)}
+  .seg button.on{background:var(--ink);color:#fff;font-weight:700}
+  .bdg.proc{background:#FFF1E6;color:#B4541F}
+  .bdg.cod{background:#2B2118;color:#fff}
+  .paybox{display:flex;gap:10px}
+  .paybox label{flex:1;display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:11px 12px;cursor:pointer;font-weight:600;margin:0}
+  .paybox label small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .paybox input{margin-top:3px;accent-color:var(--brand)}
+  .paybox label:has(input:checked){border-color:var(--brand);background:#FFF4EE}
+  .paypill{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:10px 12px;margin-top:12px;font-size:14px}
+  .paypill b{display:block}
   .chip.ready{background:#F3E8FF;border-color:#DCC4F7;color:#6B2FB3;font-weight:650}
   .alert{display:flex;align-items:center;gap:10px;background:var(--brand);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;font-weight:650}
   .alert span{flex:1}
   .alert button{background:#fff;color:var(--brand);border:0;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
   .notifbar{display:flex;align-items:center;gap:10px;background:#fff;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
   .notifbar span{flex:1}
+  /* buyer tracking */
+  .myorders{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px;cursor:pointer;font-weight:650;color:var(--ink);width:100%;font-size:15px}
+  .trk{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .trk .hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .trk .no{font-weight:800;font-size:17px}
+  .trk .cur{display:inline-block;margin-top:6px;font-weight:800;font-size:13px;letter-spacing:.04em;border-radius:8px;padding:5px 9px}
+  .tl{list-style:none;margin:16px 0 4px;padding:0;position:relative}
+  .tl li{position:relative;padding:0 0 18px 34px;color:#9A8B7D}
+  .tl li:last-child{padding-bottom:0}
+  .tl li::before{content:"";position:absolute;left:8px;top:22px;bottom:-2px;width:2px;background:var(--line)}
+  .tl li:last-child::before{display:none}
+  .tl li .dot{position:absolute;left:0;top:0;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);background:#fff;display:grid;place-items:center;font-size:11px;color:#fff}
+  .tl li.on{color:var(--ink);font-weight:650}
+  .tl li.on .dot{background:var(--ok);border-color:var(--ok)}
+  .tl li.on::before{background:var(--ok)}
+  .tl li.now .dot{box-shadow:0 0 0 4px rgba(46,125,79,.2)}
+  .tl li small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+  .trk .its{font-size:14px;color:#4A3B2E;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+  .linkbox{display:flex;gap:8px;margin-top:10px}
+  .linkbox input{font-size:13px;padding:9px 10px}
   .ord .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
   .ord .nm{font-weight:700}
   .ord .meta{font-size:12px;color:var(--muted)}
@@ -156,6 +190,15 @@
   </header>
 
   <div id="demoNote" class="notice hidden"></div>
+  <button class="myorders hidden" id="myOrdersBtn"><span>📦 <span data-t="myOrders">Pesanan saya</span> (<span id="myCount">0</span>)</span><span>›</span></button>
+
+  <!-- BUYER TRACKING VIEW -->
+  <section id="vTrack" class="hidden">
+    <h2 style="margin:0 0 4px" data-t="trackTitle">Status pesanan</h2>
+    <p class="muted" style="margin:0 0 12px" data-t="trackSub">Status diperbarui otomatis oleh penjual.</p>
+    <div id="trackList"></div>
+    <button class="btn ghost block" id="trackBack" data-t="orderAgain">← Pesan lagi</button>
+  </section>
 
   <!-- ORDER VIEW -->
   <section id="vOrder">
@@ -183,6 +226,13 @@
         <div class="err" id="eQty"></div>
       </div>
       <div class="card">
+        <h2 data-t="payMethod">Metode pembayaran</h2>
+        <div class="paybox">
+          <label><input type="radio" name="pm" value="transfer" checked><span><span data-t="pmTransfer">Transfer Bank BCA</span><small data-t="pmTransferS">Transfer sebelum dikirim</small></span></label>
+          <label><input type="radio" name="pm" value="cod"><span>COD<small data-t="pmCodS">Bayar tunai saat barang diterima</small></span></label>
+        </div>
+      </div>
+      <div class="card">
         <div class="field">
           <label for="fNote"><span data-t="note">Catatan</span> <span class="opt" data-t="optional">(opsional)</span></label>
           <textarea id="fNote" rows="2" maxlength="200"></textarea>
@@ -203,6 +253,9 @@
         <a class="btn wa block hidden" id="dWa" target="_blank" rel="noopener" data-t="sendWa">Kirim ke WhatsApp penjual</a>
       </div>
       <div style="margin-top:10px"><button class="btn block" id="dInv" data-t="viewInv">Lihat invoice</button></div>
+      <div style="margin-top:10px"><button class="btn ghost block" id="dTrack" data-t="trackBtn">📦 Lacak status pesanan</button></div>
+      <div style="text-align:left;margin-top:12px"><div class="muted" data-t="saveLink">Simpan link ini untuk cek status kapan saja:</div>
+        <div class="linkbox"><input id="dLink" type="text" readonly><button class="btn small" id="dCopy" data-t="copy">Salin</button></div></div>
       <div style="margin-top:10px"><button class="btn ghost block" id="dAgain" data-t="again">Buat pesanan lain</button></div>
     </div>
   </section>
@@ -309,7 +362,10 @@ const CONFIG = {
 <script>
 /* ---------- i18n ---------- */
 const T = {
-  id:{ready:"Siap kirim",notReady:"Belum siap",newBadge:"BARU",newOrders:"pesanan baru masuk!",seeNew:"Lihat",notifAsk:"Nyalakan suara & notifikasi untuk pesanan baru",turnOn:"Nyalakan",notifOk:"Notifikasi aktif",
+  id:{myOrders:"Pesanan saya",trackTitle:"Status pesanan",trackSub:"Status diperbarui otomatis oleh penjual.",orderAgain:"← Pesan lagi",trackBtn:"📦 Lacak status pesanan",saveLink:"Simpan link ini untuk cek status kapan saja:",copy:"Salin",copied:"Link disalin",
+      stReceived:"Order diterima",stReceivedS:"Penjual sudah menerima pesanan Anda",stPaid:"Pembayaran diterima",stPaidS:"Transfer Anda sudah dikonfirmasi",stPaidWait:"Menunggu pembayaran",
+      stReady:"Order siap dikirim",stReadyS:"Pesanan sedang dikemas / siap dikirim",stDone:"Order terkirim",stDoneS:"Pesanan sudah dikirim",trackNotFound:"Pesanan tidak ditemukan atau sudah dihapus penjual.",trackLink:"Lacak pesanan",loading:"Memuat…",removeTrack:"Hapus dari daftar",
+      ready:"Siap kirim",notReady:"Belum siap",newBadge:"BARU",newOrders:"pesanan baru masuk!",seeNew:"Lihat",notifAsk:"Nyalakan suara & notifikasi untuk pesanan baru",turnOn:"Nyalakan",notifOk:"Notifikasi aktif",
       readyMsg:"Halo {name}, pesanan Snackita Anda ({no}) sudah siap dikirim ke:\n{addr}\n\nTotal: {total}\nTerima kasih! 🙏",addr:"Alamat kirim",addrPh:"Jalan, no. rumah, RT/RW, kelurahan, kecamatan, kota, kode pos",errAddr:"Alamat kirim wajib diisi.",name:"Nama",wa:"No. WhatsApp",optional:"(opsional)",chooseQty:"Pilih jumlah",note:"Catatan",
       totalQty:"Total qty",submit:"Pesan",thanks:"Terima kasih, pesanan diterima!",orderNo:"No. pesanan",
       sendWa:"Kirim ke WhatsApp penjual",again:"Buat pesanan lain",adminLogin:"Login penjual",password:"Password",
@@ -317,13 +373,19 @@ const T = {
       accepting:"Terima pesanan",save:"Simpan",search:"Cari nama…",
       errName:"Nama wajib diisi.",errQty:"Isi jumlah minimal 1 untuk salah satu produk.",errSend:"Gagal mengirim. Cek koneksi lalu coba lagi.",
       closed:"Maaf, pesanan sedang ditutup.",sending:"Mengirim…",total:"Total",price:"Harga",
-      orders:"Pesanan",revenue:"Omzet",paid:"Lunas",unpaid:"Belum bayar",done:"Terkirim",all:"Semua",open:"Belum kirim",
+      orders:"Pesanan",revenue:"Omzet",paid:"Lunas",unpaid:"Belum terbayar",done:"Terkirim",all:"Semua",open:"Belum kirim",received:"Diterima",processing:"Diproses",
+      payMethod:"Metode pembayaran",pmTransfer:"Transfer Bank BCA",pmTransferS:"Transfer sebelum dikirim",pmCodS:"Bayar tunai saat barang diterima",method:"Metode",
+      codNote:"COD — bayar tunai saat pesanan diterima.",stProcessing:"Order diproses",stProcessingS:"Pesanan sedang disiapkan",payPaid:"Order lunas",payUnpaid:"Order belum terbayar",payPaidS:"Pembayaran sudah dikonfirmasi penjual",
+      stage:"Status",
       del:"Hapus",confirmDel:"Hapus pesanan ini?",saved:"Tersimpan",noOrders:"Belum ada pesanan.",
       demo:"Mode demo: pesanan hanya tersimpan di perangkat ini. Isi konfigurasi Firebase agar pesanan masuk ke dashboard penjual. Dashboard: tambahkan ?admin di akhir link.",
       loginErr:"Email atau password salah.",viewInv:"Lihat invoice",howPay:"Cara bayar: transfer sesuai total ke rekening berikut",back:"← Kembali",printPdf:"Cetak / Simpan PDF",shareWa:"Kirim via WA",
       invoice:"INVOICE",invNo:"No. Invoice",date:"Tanggal",billTo:"Kepada",product:"Produk",qty:"Qty",unitPrice:"Harga",subtotal:"Subtotal",
-      payment:"Pembayaran",status:"Status",paidStamp:"LUNAS",unpaidStamp:"BELUM LUNAS",invWa:"Invoice",waMsg:"Halo, saya sudah pesan",perItem:"per",paidRev:"sudah dibayar"},
-  en:{ready:"Ready to ship",notReady:"Not ready",newBadge:"NEW",newOrders:"new order(s) received!",seeNew:"View",notifAsk:"Turn on sound & notifications for new orders",turnOn:"Turn on",notifOk:"Notifications on",
+      payment:"Pembayaran",status:"Status",paidStamp:"LUNAS",unpaidStamp:"BELUM TERBAYAR",invWa:"Invoice",waMsg:"Halo, saya sudah pesan",perItem:"per",paidRev:"sudah dibayar"},
+  en:{myOrders:"My orders",trackTitle:"Order status",trackSub:"Status is updated automatically by the seller.",orderAgain:"← Order again",trackBtn:"📦 Track order status",saveLink:"Save this link to check your status anytime:",copy:"Copy",copied:"Link copied",
+      stReceived:"Order received",stReceivedS:"The seller has received your order",stPaid:"Payment received",stPaidS:"Your transfer has been confirmed",stPaidWait:"Waiting for payment",
+      stReady:"Order ready to ship",stReadyS:"Your order is packed / ready to ship",stDone:"Order delivered",stDoneS:"Your order has been sent",trackNotFound:"Order not found, or removed by the seller.",trackLink:"Track order",loading:"Loading…",removeTrack:"Remove from list",
+      ready:"Ready to ship",notReady:"Not ready",newBadge:"NEW",newOrders:"new order(s) received!",seeNew:"View",notifAsk:"Turn on sound & notifications for new orders",turnOn:"Turn on",notifOk:"Notifications on",
       readyMsg:"Hi {name}, your Snackita order ({no}) is ready to ship to:\n{addr}\n\nTotal: {total}\nThank you! 🙏",addr:"Shipping address",addrPh:"Street, house no., RT/RW, kelurahan, kecamatan, city, postcode",errAddr:"Please enter your shipping address.",name:"Name",wa:"WhatsApp number",optional:"(optional)",chooseQty:"Choose quantity",note:"Note",
       totalQty:"Total qty",submit:"Order",thanks:"Thank you, order received!",orderNo:"Order no.",
       sendWa:"Send to seller on WhatsApp",again:"Place another order",adminLogin:"Seller login",password:"Password",
@@ -331,7 +393,10 @@ const T = {
       accepting:"Accepting orders",save:"Save",search:"Search name…",
       errName:"Please enter your name.",errQty:"Enter at least 1 for one of the products.",errSend:"Couldn't send. Check your connection and try again.",
       closed:"Sorry, orders are closed right now.",sending:"Sending…",total:"Total",price:"Price",
-      orders:"Orders",revenue:"Revenue",paid:"Paid",unpaid:"Unpaid",done:"Delivered",all:"All",open:"Not delivered",
+      orders:"Orders",revenue:"Revenue",paid:"Paid",unpaid:"Unpaid",done:"Delivered",all:"All",open:"Not delivered",received:"Received",processing:"Processing",
+      payMethod:"Payment method",pmTransfer:"BCA bank transfer",pmTransferS:"Transfer before shipping",pmCodS:"Pay cash on delivery",method:"Method",
+      codNote:"COD — pay cash when the order arrives.",stProcessing:"Order processing",stProcessingS:"Your order is being prepared",payPaid:"Order paid",payUnpaid:"Order unpaid",payPaidS:"Payment confirmed by the seller",
+      stage:"Status",
       del:"Delete",confirmDel:"Delete this order?",saved:"Saved",noOrders:"No orders yet.",
       demo:"Demo mode: orders are saved on this device only. Add your Firebase config so orders reach the seller dashboard. Dashboard: add ?admin to the end of the link.",
       loginErr:"Wrong email or password.",viewInv:"View invoice",howPay:"How to pay: transfer the total to this account",back:"← Back",printPdf:"Print / Save PDF",shareWa:"Send via WA",
@@ -352,13 +417,19 @@ const Store = (()=>{
     const K="kr_demo_v1";
     const load=()=>{try{return JSON.parse(localStorage.getItem(K))||{orders:{},settings:null}}catch(e){return {orders:{},settings:null}}};
     const save=d=>{try{localStorage.setItem(K,JSON.stringify(d))}catch(e){}};
-    let subs=[], setSubs=[], authCb=null, user=null;
+    let subs=[], setSubs=[], authCb=null, user=null, stSubs={};
+    const stEmit=id=>{const v=(load().status||{})[id]||null;(stSubs[id]||[]).forEach(f=>f(v))};
+    window.addEventListener("storage",e=>{if(e.key===K){Object.keys(stSubs).forEach(stEmit);emit()}});
     const emit=()=>{const d=load();subs.forEach(f=>f(d.orders||{}))};
     const emitS=()=>{const d=load();setSubs.forEach(f=>f(d.settings))};
     return {
       onSettings(cb){setSubs.push(cb);cb(load().settings)},
       async saveSettings(s){const d=load();d.settings=s;save(d);emitS()},
       async addOrder(o){const d=load();const id="d"+Date.now().toString(36);o.createdAt=Date.now();d.orders[id]=o;save(d);emit();return id},
+      async setStatus(id,st){const d=load();d.status=d.status||{};d.status[id]={...st,createdAt:st.createdAt&&typeof st.createdAt==="number"?st.createdAt:(d.orders[id]?.createdAt||Date.now())};save(d);stEmit(id)},
+      async updateStatus(id,p){const d=load();d.status=d.status||{};d.status[id]={...(d.status[id]||{}),...p};save(d);stEmit(id)},
+      async deleteStatus(id){const d=load();if(d.status)delete d.status[id];save(d);stEmit(id)},
+      onStatus(id,cb){(stSubs[id]=stSubs[id]||[]).push(cb);cb((load().status||{})[id]||null)},
       onOrders(cb){subs.push(cb);cb(load().orders||{})},
       async updateOrder(id,p){const d=load();Object.assign(d.orders[id],p);save(d);emit()},
       async deleteOrder(id){const d=load();delete d.orders[id];save(d);emit()},
@@ -376,6 +447,10 @@ const Store = (()=>{
     onOrders(cb){db.ref(R+"/orders").on("value",s=>cb(s.val()||{}),e=>{console.error(e);cb({})})},
     updateOrder(id,p){return db.ref(R+"/orders/"+id).update(p)},
     deleteOrder(id){return db.ref(R+"/orders/"+id).remove()},
+    setStatus(id,st){ if(st.createdAt==null) st={...st,createdAt:firebase.database.ServerValue.TIMESTAMP}; return db.ref(R+"/status/"+id).set(st)},
+    updateStatus(id,p){return db.ref(R+"/status/"+id).update(p)},
+    deleteStatus(id){return db.ref(R+"/status/"+id).remove()},
+    onStatus(id,cb){db.ref(R+"/status/"+id).on("value",s=>cb(s.val()),()=>cb(null))},
     onAuth(cb){auth.onAuthStateChanged(cb)},
     signIn(e,p){return auth.signInWithEmailAndPassword(e,p)},
     signOut(){return auth.signOut()}
@@ -388,6 +463,20 @@ CONFIG.items.forEach(i=>SETTINGS.prices[i.id]=i.price);
 const price = id => Number(SETTINGS.prices?.[id] ?? CONFIG.items.find(i=>i.id===id).price);
 const qty = {}; CONFIG.items.forEach(i=>qty[i.id]=0);
 const IS_ADMIN = new URLSearchParams(location.search).has("admin");
+const TRACK_ID = new URLSearchParams(location.search).get("track");
+const BASE_URL = location.origin + location.pathname;
+const trackUrl = id => BASE_URL + "?track=" + encodeURIComponent(id);
+const STAGES=["received","processing","ready","done"];
+const stageOf = o => (o && STAGES.includes(o.stage)) ? o.stage : (o?.done?"done":o?.ready?"ready":"received");
+const isCod = o => o?.payMethod==="cod";
+const statusFrom = o => { const items={}; Object.entries(o.items||{}).forEach(([k,v])=>items[k]={name:v.name,qty:v.qty,price:v.price});
+  const sg=stageOf(o);
+  const st={paid:!!o.paid,ready:sg==="ready"||sg==="done",done:sg==="done",stage:sg,payMethod:o.payMethod||"transfer",totalQty:o.totalQty||0,totalCost:o.totalCost||0,items};
+  if(typeof o.createdAt==="number") st.createdAt=o.createdAt; return st };
+const MY_KEY="kr_my_orders_v1";
+const myOrders = () => { try{return JSON.parse(localStorage.getItem(MY_KEY))||[]}catch(e){return []} };
+function addMyOrder(id){ const l=myOrders().filter(x=>x!==id); l.unshift(id); try{localStorage.setItem(MY_KEY,JSON.stringify(l.slice(0,30)))}catch(e){} }
+function removeMyOrder(id){ try{localStorage.setItem(MY_KEY,JSON.stringify(myOrders().filter(x=>x!==id)))}catch(e){} }
 
 /* ---------- Static text ---------- */
 function applyLang(){
@@ -401,6 +490,7 @@ function applyLang(){
   renderItems(); renderTotals(); applyOpen();
   if (IS_ADMIN) renderAdmin();
   if (INV) showInvoice(INV);
+  if (typeof renderTrack==="function" && openTrack.ids) renderTrack();
 }
 document.querySelectorAll(".lang button").forEach(b=>b.onclick=()=>{LANG=b.dataset.l;try{localStorage.setItem("kr_lang",LANG)}catch(e){};applyLang()});
 
@@ -454,10 +544,13 @@ $("orderForm").onsubmit = async e=>{
   if(q<1){$("eQty").textContent=t("errQty");ok=false}
   if(!ok){(!name?$("fName"):!address?$("fAddr"):$("itemsCard")).scrollIntoView({behavior:"smooth",block:"center"});return}
   const items={}; CONFIG.items.forEach(i=>{ if(qty[i.id]>0) items[i.id]={name:i.name,qty:qty[i.id],price:price(i.id)} });
-  const order={name,address,wa:$("fWa").value.trim(),note:$("fNote").value.trim(),items,totalQty:q,totalCost:c,paid:false,done:false,lang:LANG};
+  const payMethod=(document.querySelector('input[name=pm]:checked')||{}).value||"transfer";
+  const order={name,address,wa:$("fWa").value.trim(),note:$("fNote").value.trim(),items,totalQty:q,totalCost:c,payMethod,stage:"received",paid:false,ready:false,done:false,lang:LANG};
   const btn=$("submitBtn"); btn.disabled=true; btn.textContent=t("sending");
   try{
     const id=await Store.addOrder(order);
+    try{ await Store.setStatus(id,statusFrom({...order,paid:false,ready:false,done:false,createdAt:null})) }catch(e){console.warn("status",e)}
+    addMyOrder(id); updateMyBtn();
     showDone(id,order);
   }catch(err){console.error(err);toast(t("errSend"))}
   finally{btn.disabled=false;btn.textContent=t("submit")}
@@ -473,15 +566,19 @@ function showDone(id,o){
   const wa=(SETTINGS.sellerWa||"").replace(/\D/g,"");
   if(wa){
     const lines=Object.values(o.items).map(it=>`- ${it.name}: ${it.qty}`).join("\n");
-    const msg=`${t("waMsg")} (${no})\n${t("name")}: ${o.name}\n${t("addr")}: ${o.address||"-"}\n${lines}\n${t("totalQty")}: ${o.totalQty}\n${t("total")}: ${rp(o.totalCost)}`;
+    const msg=`${t("waMsg")} (${no})\n${t("name")}: ${o.name}\n${t("addr")}: ${o.address||"-"}\n${lines}\n${t("totalQty")}: ${o.totalQty}\n${t("total")}: ${rp(o.totalCost)}\n${t("method")}: ${isCod(o)?"COD":t("pmTransfer")}\n${t("trackLink")}: ${trackUrl(id)}`;
     $("dWa").href="https://wa.me/"+wa+"?text="+encodeURIComponent(msg); $("dWa").classList.remove("hidden");
   } else $("dWa").classList.add("hidden");
-  if(CONFIG.invoice?.paymentInfo){ $("dPayTxt").innerHTML=payHtml()+"\n<b>"+rp(o.totalCost)+"</b>"; $("dPay").classList.remove("hidden") }
+  $("dLink").value=trackUrl(id);
+  if(isCod(o)){ $("dPayTxt").innerHTML=esc(t("codNote"))+"\n<b>"+rp(o.totalCost)+"</b>"; $("dPay").classList.remove("hidden") }
+  else if(CONFIG.invoice?.paymentInfo){ $("dPayTxt").innerHTML=payHtml()+"\n<b>"+rp(o.totalCost)+"</b>"; $("dPay").classList.remove("hidden") }
+  else $("dPay").classList.add("hidden");
   $("vOrder").classList.add("hidden"); $("bar").classList.add("hidden"); $("vDone").classList.remove("hidden");
   window.scrollTo(0,0);
 }
 $("dAgain").onclick=()=>{
   CONFIG.items.forEach(i=>qty[i.id]=0); $("fNote").value="";
+  const pm=document.querySelector('input[name=pm][value=transfer]'); if(pm) pm.checked=true;
   renderItems(); renderTotals();
   $("vDone").classList.add("hidden"); $("vOrder").classList.remove("hidden"); $("bar").classList.remove("hidden");
 };
@@ -537,7 +634,11 @@ const hadSeenStore = (()=>{try{return localStorage.getItem(SEEN_KEY)!==null}catc
 function saveSeen(){try{localStorage.setItem(SEEN_KEY,JSON.stringify([...SEEN].slice(-2000)))}catch(e){}}
 function markSeen(ids){ids.forEach(i=>SEEN.add(i));saveSeen();updateNewUi()}
 const isNew = id => !SEEN.has(id);
+let BACKFILLED=false;
+function backfillStatus(){ if(BACKFILLED) return; BACKFILLED=true;
+  Object.entries(ORDERS).forEach(([id,o])=>{ Store.setStatus(id,statusFrom(o)).catch(e=>console.warn("backfill",e)) }) }
 function detectNew(){
+  backfillStatus();
   const ids=Object.keys(ORDERS);
   if(FIRST_SNAP){ FIRST_SNAP=false; ids.forEach(i=>KNOWN.add(i));
     if(!hadSeenStore){ markSeen(ids) } else updateNewUi(); return }
@@ -583,9 +684,10 @@ function renderAdmin(){
     `<div class="tile"><div class="k">${t("orders")}</div><div class="v">${all.length}</div><div class="s">${t("totalQty")}: ${tq}</div></div>
      <div class="tile"><div class="k">${t("revenue")}</div><div class="v">${rp(tc)}</div><div class="s">${rp(pc)} ${t("paidRev")}</div></div>` +
     CONFIG.items.map(i=>`<div class="tile"><div class="k">${esc(i.name)}</div><div class="v">${per[i.id]}</div><div class="s">${rp(per[i.id]*price(i.id))}</div></div>`).join("");
-  const counts={all:all.length,unpaid:all.filter(o=>!o.paid).length,paid:all.filter(o=>o.paid).length,ready:all.filter(o=>o.ready&&!o.done).length,open:all.filter(o=>!o.done).length,done:all.filter(o=>o.done).length};
+  const counts={all:all.length,unpaid:all.filter(o=>!o.paid).length,paid:all.filter(o=>o.paid).length};
+  STAGES.forEach(sg=>counts[sg]=all.filter(o=>stageOf(o)===sg).length);
   updateNewUi();
-  $("tabs").innerHTML = ["all","unpaid","paid","ready","open","done"].map(f=>`<button data-f="${f}" class="${FILTER===f?"on":""}">${t(f)} (${counts[f]})</button>`).join("");
+  $("tabs").innerHTML = ["all","unpaid","paid",...STAGES].map(f=>`<button data-f="${f}" class="${FILTER===f?"on":""}">${t(f)} (${counts[f]})</button>`).join("");
   $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;renderAdmin()});
   renderOrders();
 }
@@ -593,8 +695,7 @@ function renderOrders(){
   const q=($("aSearch").value||"").toLowerCase();
   const rows=list().filter(o=>{
     if(FILTER==="unpaid"&&o.paid)return false; if(FILTER==="paid"&&!o.paid)return false;
-    if(FILTER==="open"&&o.done)return false; if(FILTER==="done"&&!o.done)return false;
-    if(FILTER==="ready"&&(!o.ready||o.done))return false;
+    if(STAGES.includes(FILTER) && stageOf(o)!==FILTER) return false;
     return !q || (o.name||"").toLowerCase().includes(q) || (o.address||"").toLowerCase().includes(q) || orderNo(o.id).toLowerCase().includes(q);
   });
   if(!rows.length){$("orders").innerHTML=`<div class="empty">${t("noOrders")}</div>`;return}
@@ -602,7 +703,7 @@ function renderOrders(){
   $("orders").innerHTML = rows.map(o=>{
     const wa=(o.wa||"").replace(/\D/g,"").replace(/^0/,"62");
     const nw=isNew(o.id);
-    return `<div class="ord ${o.paid?"is-paid":""} ${o.done?"is-done":""} ${nw?"is-new":""}">
+    return `<div class="ord ${o.paid?"is-paid":""} ${stageOf(o)==="done"&&o.paid?"is-done":""} ${nw?"is-new":""}">
       <div class="top">
         <div><div class="nm">${esc(o.name)}</div>
           <div class="meta">${orderNo(o.id)} · ${o.createdAt?fmt.format(new Date(o.createdAt)):""}${wa?` · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(o.wa)}</a>`:""}</div></div>
@@ -611,42 +712,49 @@ function renderOrders(){
       <div class="badges">
         ${nw?`<span class="bdg new" data-seen="${o.id}">${t("newBadge")} ✕</span>`:""}
         <span class="bdg ${o.paid?"paid":"unpaid"}">${o.paid?"✓ "+t("paidStamp"):t("unpaidStamp")}</span>
-        ${o.ready&&!o.done?`<span class="bdg ready">📦 ${t("ready").toUpperCase()}</span>`:""}
-        ${o.done?`<span class="bdg done">🚚 ${t("done").toUpperCase()}</span>`:""}
+        ${isCod(o)?`<span class="bdg cod">COD</span>`:""}
+        ${(()=>{const sg=stageOf(o);return sg==="processing"?`<span class="bdg proc">⚙️ ${t("processing").toUpperCase()}</span>`:sg==="ready"?`<span class="bdg ready">📦 ${t("ready").toUpperCase()}</span>`:sg==="done"?`<span class="bdg done">🚚 ${t("done").toUpperCase()}</span>`:""})()}
       </div>
       ${o.address?`<div class="muted" style="margin-top:6px;white-space:pre-line">📍 ${esc(o.address)}</div>`:""}
       <div class="lines">${Object.values(o.items||{}).map(it=>`${esc(it.name)}: <b>${it.qty}</b>`).join(" · ")} · ${t("totalQty")}: <b>${o.totalQty}</b>
         ${o.note?`<div class="muted" style="margin-top:4px">“${esc(o.note)}”</div>`:""}</div>
+      <div class="seg">${(()=>{const ci=STAGES.indexOf(stageOf(o));return STAGES.map((sg,i)=>`<button class="${i===ci?"on":i<ci?"past":""}" data-stage="${sg}" data-id="${o.id}">${t(sg)}</button>`).join("")})()}</div>
       <div class="acts">
-        <button class="chip ${o.paid?"paid":""}" data-a="paid" data-id="${o.id}">${o.paid?"✓ "+t("paid"):t("unpaid")}</button>
-        <button class="chip ${o.ready?"ready":""}" data-a="ready" data-id="${o.id}">${o.ready?"📦 "+t("ready"):t("notReady")}</button>
-        <button class="chip ${o.done?"done":""}" data-a="done" data-id="${o.id}">${o.done?"✓ "+t("done"):t("open")}</button>
+        <button class="chip ${o.paid?"paid":""}" data-a="paid" data-id="${o.id}">${o.paid?"✓ "+t("paid"):"💰 "+t("unpaid")}</button>
         <button class="chip" data-a="inv" data-id="${o.id}">🧾 Invoice</button>
         <button class="chip del" data-a="del" data-id="${o.id}">${t("del")}</button>
       </div></div>`}).join("");
   $("orders").querySelectorAll("[data-seen]").forEach(b=>b.onclick=()=>{markSeen([b.dataset.seen]);renderOrders()});
+  $("orders").querySelectorAll("button[data-stage]").forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.id,o=ORDERS[id],sg=b.dataset.stage;
+    if(isNew(id)) markSeen([id]);
+    if(stageOf(o)===sg) return;
+    if(sg==="ready"){
+      const wa=(o.wa||"").replace(/\D/g,"").replace(/^0/,"62");
+      if(wa){
+        const msg=t("readyMsg").replace("{name}",o.name||"").replace("{no}",orderNo(id)).replace("{addr}",o.address||"-").replace("{total}",rp(o.totalCost))
+          +(isCod(o)&&!o.paid?`\n${t("codNote")}`:"")+`\n\n${t("trackLink")}: ${trackUrl(id)}`;
+        window.open("https://wa.me/"+wa+"?text="+encodeURIComponent(msg),"_blank","noopener");
+      }
+    }
+    const i=STAGES.indexOf(sg), patch={stage:sg,ready:i>=2,done:i===3};
+    try{ await Store.updateOrder(id,patch); try{ await Store.updateStatus(id,patch) }catch(e){console.warn(e)} }
+    catch(e){console.error(e);toast(t("errSend"))}
+  });
   $("orders").querySelectorAll("button[data-a]").forEach(b=>b.onclick=async()=>{
     const id=b.dataset.id,o=ORDERS[id],a=b.dataset.a;
     if(isNew(id)) markSeen([id]);
-    // Turning on "ready": offer to tell the buyer on WhatsApp (opened right away so the browser doesn't block it)
-    if(a==="ready" && !o.ready){
-      const wa=(o.wa||"").replace(/\D/g,"").replace(/^0/,"62");
-      if(wa){
-        const msg=t("readyMsg").replace("{name}",o.name||"").replace("{no}",orderNo(id)).replace("{addr}",o.address||"-").replace("{total}",rp(o.totalCost));
-        window.open("https://wa.me/"+wa+"?text="+encodeURIComponent(msg),"_blank","noopener");
-      } else toast(t("ready")+" ✓");
-    }
     try{
       if(a==="inv"){ showInvoice({id,...o}); return }
-      if(a==="del"){ if(confirm(t("confirmDel"))) await Store.deleteOrder(id) }
-      else await Store.updateOrder(id,{[a]:!o[a]});
+      if(a==="del"){ if(confirm(t("confirmDel"))){ await Store.deleteOrder(id); try{await Store.deleteStatus(id)}catch(e){} } }
+      else { await Store.updateOrder(id,{[a]:!o[a]}); try{ await Store.updateStatus(id,{[a]:!o[a]}) }catch(e){console.warn(e)} }
     }catch(e){console.error(e);toast(t("errSend"))}
   });
 }
 function exportCsv(){
-  const head=["Order No","Date","Name","WhatsApp","Address",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Paid","Ready","Delivered","Note"];
+  const head=["Order No","Date","Name","WhatsApp","Address",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Payment Method","Payment","Status","Note"];
   const rows=list().map(o=>[orderNo(o.id),o.createdAt?new Date(o.createdAt).toISOString().replace("T"," ").slice(0,16):"",o.name,o.wa,o.address||"",
-    ...CONFIG.items.map(i=>o.items?.[i.id]?.qty||0),o.totalQty,o.totalCost,o.paid?"Y":"N",o.ready?"Y":"N",o.done?"Y":"N",o.note||""]);
+    ...CONFIG.items.map(i=>o.items?.[i.id]?.qty||0),o.totalQty,o.totalCost,isCod(o)?"COD":"Transfer",o.paid?"Lunas":"Belum terbayar",t(stageOf(o)),o.note||""]);
   const csv=[head,...rows].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv"}));
   a.download="orders-keripik-"+new Date().toISOString().slice(0,10)+".csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
@@ -682,7 +790,8 @@ function showInvoice(o){
       <tfoot><tr class="grand"><td>${t("total")}</td><td class="r">${o.totalQty}</td><td></td><td class="r">${rp(o.totalCost)}</td></tr></tfoot>
     </table>
     ${o.note?`<p class="inv-foot"><span class="lbl">${t("note")}:</span> ${esc(o.note)}</p>`:""}
-    ${I.paymentInfo?`<div class="inv-foot"><div class="lbl">${t("payment")}</div><div class="pay">${payHtml()}</div></div>`:""}
+    ${isCod(o)?`<div class="inv-foot"><div class="lbl">${t("payment")}</div><div class="pay"><b>COD</b>\n${esc(t("codNote"))}</div></div>`
+      :I.paymentInfo?`<div class="inv-foot"><div class="lbl">${t("payment")}</div><div class="pay">${payHtml()}</div></div>`:""}
     <p class="inv-foot" style="text-align:center;margin-top:22px">${esc((I.footer&&(I.footer[LANG]||I.footer.id))||"")}</p>`;
   // WhatsApp share: admin → buyer's number; buyer → seller's number
   const target = IS_ADMIN ? (o.wa||"").replace(/\D/g,"").replace(/^0/,"62") : (SETTINGS.sellerWa||"").replace(/\D/g,"");
@@ -690,7 +799,8 @@ function showInvoice(o){
     const msg=`*${t("invWa")} ${invNo(o)}*\n${t("date")}: ${dt}\n${t("billTo")}: ${o.name}\n${t("addr")}: ${o.address||"-"}\n\n`
       + its.map(it=>`${it.name}\n  ${it.qty} x ${rp(it.price)} = ${rp(it.qty*it.price)}`).join("\n")
       + `\n\n${t("totalQty")}: ${o.totalQty}\n*${t("total")}: ${rp(o.totalCost)}*\n${t("status")}: ${o.paid?t("paidStamp"):t("unpaidStamp")}`
-      + (I.paymentInfo?`\n\n${t("payment")}: ${I.paymentInfo}`:"");
+      + (isCod(o)?`\n\n${t("payment")}: ${t("codNote")}`:I.paymentInfo?`\n\n${t("payment")}: ${I.paymentInfo}`:"")
+      + (o.id?`\n\n${t("trackLink")}: ${trackUrl(o.id)}`:"");
     $("iWa").href="https://wa.me/"+target+"?text="+encodeURIComponent(msg); $("iWa").classList.remove("hidden");
   } else $("iWa").classList.add("hidden");
   $("vInvoice").classList.remove("hidden"); document.title=invNo(o); $("vInvoice").scrollTop=0;
@@ -699,9 +809,65 @@ $("iClose").onclick=()=>{$("vInvoice").classList.add("hidden");document.title=CO
 $("iPrint").onclick=()=>window.print();
 $("dInv").onclick=()=>LAST&&showInvoice(LAST);
 
+/* ---------- Buyer tracking ---------- */
+const TRK={}; // id -> status (undefined=loading, null=not found)
+const TRK_SUB=new Set();
+function updateMyBtn(){
+  const n=myOrders().length; $("myCount").textContent=n;
+  $("myOrdersBtn").classList.toggle("hidden", IS_ADMIN || !n || !$("vTrack").classList.contains("hidden"));
+}
+function openTrack(ids){
+  $("vOrder").classList.add("hidden"); $("vDone").classList.add("hidden"); $("bar").classList.add("hidden");
+  $("vTrack").classList.remove("hidden"); updateMyBtn();
+  openTrack.ids=ids;
+  ids.forEach(id=>{ if(!TRK_SUB.has(id)){ TRK_SUB.add(id); Store.onStatus(id,st=>{TRK[id]=st;renderTrack()}) } });
+  renderTrack(); window.scrollTo(0,0);
+}
+function renderTrack(){
+  const ids=openTrack.ids||[]; if($("vTrack").classList.contains("hidden")) return;
+  const fmt=new Intl.DateTimeFormat(LANG==="id"?"id-ID":"en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  $("trackList").innerHTML = ids.map(id=>{
+    const st=TRK[id];
+    if(st===undefined) return `<div class="trk"><div class="no">${orderNo(id)}</div><p class="muted">${t("loading")}</p></div>`;
+    if(st===null) return `<div class="trk"><div class="no">${orderNo(id)}</div><p class="muted">${t("trackNotFound")}</p>
+       <button class="chip del" data-rm="${id}">${t("removeTrack")}</button></div>`;
+    const sg=stageOf(st), cur=STAGES.indexOf(sg);
+    const steps=[
+      {t:t("stReceived"), s:t("stReceivedS")},
+      {t:t("stProcessing"), s:t("stProcessingS")},
+      {t:t("stReady"), s:t("stReadyS")},
+      {t:t("stDone"), s:t("stDoneS")}
+    ].map((x,i)=>({...x,on:i<=cur}));
+    const curLbl = steps[cur].t;
+    const curCls = sg==="done"?"background:#E8EEF9;color:#2A4F9A":sg==="ready"?"background:#F3E8FF;color:#6B2FB3":sg==="processing"?"background:#FFF1E6;color:#B4541F":"background:#F4F1EC;color:#2B2118";
+    const payHtmlT = st.paid
+      ? `<div class="paypill" style="background:#E3F3E9;color:#1F5E3A"><span>✅</span><span><b>${esc(t("payPaid"))}</b>${esc(t("payPaidS"))}</span></div>`
+      : `<div class="paypill" style="background:#FCEBD0;color:#6E470A"><span>⏳</span><span><b>${esc(t("payUnpaid"))}</b><span style="white-space:pre-line">${st.payMethod==="cod"?esc(t("codNote")):payHtml()}</span></span></div>`;
+    return `<div class="trk">
+      <div class="hd"><div><div class="no">${orderNo(id)}</div>
+        <div class="muted">${st.createdAt?fmt.format(new Date(st.createdAt)):""}</div>
+        <span class="cur" style="${curCls}">${esc(curLbl).toUpperCase()}</span>
+        <span class="cur" style="${st.paid?"background:#2E7D4F;color:#fff":"background:#FCEBD0;color:#8A5A0B"}">${st.paid?"✓ "+t("paidStamp"):t("unpaidStamp")}</span>
+        ${st.payMethod==="cod"?`<span class="cur" style="background:#2B2118;color:#fff">COD</span>`:""}</div>
+        <div style="font-weight:800;white-space:nowrap">${rp(st.totalCost)}</div></div>
+      ${payHtmlT}
+      <ul class="tl">${steps.map((x,i)=>`<li class="${x.on?"on":""} ${i===cur?"now":""}"><span class="dot">${x.on?"✓":""}</span>${esc(x.t)}<small>${esc(x.s||"")}</small></li>`).join("")}</ul>
+      <div class="its">${Object.values(st.items||{}).map(it=>`${esc(it.name)}: <b>${it.qty}</b>`).join(" · ")} · ${t("totalQty")}: <b>${st.totalQty}</b></div>
+    </div>`;
+  }).join("") || `<div class="empty">${t("noOrders")}</div>`;
+  $("trackList").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{removeMyOrder(b.dataset.rm);openTrack.ids=openTrack.ids.filter(x=>x!==b.dataset.rm);renderTrack();updateMyBtn()});
+}
+$("myOrdersBtn").onclick=()=>openTrack(myOrders());
+$("dTrack").onclick=()=>LAST&&openTrack([LAST.id]);
+$("trackBack").onclick=()=>{ if(TRACK_ID) history.replaceState(null,"",BASE_URL);
+  $("vTrack").classList.add("hidden"); $("vOrder").classList.remove("hidden"); $("bar").classList.remove("hidden");
+  CONFIG.items.forEach(i=>qty[i.id]=0); $("fNote").value=""; renderItems(); renderTotals(); updateMyBtn(); window.scrollTo(0,0) };
+$("dCopy").onclick=async()=>{ const v=$("dLink").value; try{await navigator.clipboard.writeText(v)}catch(e){$("dLink").select();document.execCommand&&document.execCommand("copy")} toast(t("copied")) };
+
 /* ---------- Boot ---------- */
 if(IS_ADMIN) initAdmin();
 applyLang();
+if(!IS_ADMIN){ if(TRACK_ID){ addMyOrder(TRACK_ID); openTrack([TRACK_ID]) } updateMyBtn(); }
 </script>
 </body>
 </html>
