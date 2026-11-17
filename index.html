@@ -75,7 +75,23 @@
   .tabs{display:flex;gap:6px;overflow-x:auto;margin:4px 0 10px;padding-bottom:2px}
   .tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;white-space:nowrap;color:var(--ink)}
   .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .ord{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  .ord{background:#fff;border:1px solid var(--line);border-left:6px solid #E9B44C;border-radius:14px;padding:12px 14px;margin-bottom:10px;transition:background .3s}
+  .ord.is-paid{background:#EEF8F1;border-color:#BFE3CC;border-left-color:var(--ok)}
+  .ord.is-done{opacity:.6}
+  .ord.is-new{box-shadow:0 0 0 3px rgba(226,72,31,.35)}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .bdg{font-size:11px;font-weight:800;letter-spacing:.05em;border-radius:6px;padding:3px 7px;line-height:1}
+  .bdg.new{background:var(--brand);color:#fff;cursor:pointer}
+  .bdg.paid{background:var(--ok);color:#fff}
+  .bdg.unpaid{background:#FCEBD0;color:#8A5A0B}
+  .bdg.ready{background:#F3E8FF;color:#6B2FB3}
+  .bdg.done{background:#E8EEF9;color:#2A4F9A}
+  .chip.ready{background:#F3E8FF;border-color:#DCC4F7;color:#6B2FB3;font-weight:650}
+  .alert{display:flex;align-items:center;gap:10px;background:var(--brand);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;font-weight:650}
+  .alert span{flex:1}
+  .alert button{background:#fff;color:var(--brand);border:0;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
+  .notifbar{display:flex;align-items:center;gap:10px;background:#fff;border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+  .notifbar span{flex:1}
   .ord .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
   .ord .nm{font-weight:700}
   .ord .meta{font-size:12px;color:var(--muted)}
@@ -204,6 +220,8 @@
 
   <!-- ADMIN DASHBOARD -->
   <section id="vAdmin" class="hidden">
+    <div class="alert hidden" id="newAlert"><span id="newAlertTxt"></span><button id="newSeen" data-t="seeNew">Lihat</button></div>
+    <div class="notifbar hidden" id="notifBar"><span data-t="notifAsk">Nyalakan suara & notifikasi untuk pesanan baru</span><button class="btn small" id="notifOn" data-t="turnOn">Nyalakan</button></div>
     <div class="tiles" id="tiles"></div>
     <div class="row" style="margin-bottom:10px">
       <button class="btn ghost small" id="aCsv" data-t="exportCsv">Export CSV</button>
@@ -291,7 +309,8 @@ const CONFIG = {
 <script>
 /* ---------- i18n ---------- */
 const T = {
-  id:{addr:"Alamat kirim",addrPh:"Jalan, no. rumah, RT/RW, kelurahan, kecamatan, kota, kode pos",errAddr:"Alamat kirim wajib diisi.",name:"Nama",wa:"No. WhatsApp",optional:"(opsional)",chooseQty:"Pilih jumlah",note:"Catatan",
+  id:{ready:"Siap kirim",notReady:"Belum siap",newBadge:"BARU",newOrders:"pesanan baru masuk!",seeNew:"Lihat",notifAsk:"Nyalakan suara & notifikasi untuk pesanan baru",turnOn:"Nyalakan",notifOk:"Notifikasi aktif",
+      readyMsg:"Halo {name}, pesanan Snackita Anda ({no}) sudah siap dikirim ke:\n{addr}\n\nTotal: {total}\nTerima kasih! 🙏",addr:"Alamat kirim",addrPh:"Jalan, no. rumah, RT/RW, kelurahan, kecamatan, kota, kode pos",errAddr:"Alamat kirim wajib diisi.",name:"Nama",wa:"No. WhatsApp",optional:"(opsional)",chooseQty:"Pilih jumlah",note:"Catatan",
       totalQty:"Total qty",submit:"Pesan",thanks:"Terima kasih, pesanan diterima!",orderNo:"No. pesanan",
       sendWa:"Kirim ke WhatsApp penjual",again:"Buat pesanan lain",adminLogin:"Login penjual",password:"Password",
       login:"Masuk",exportCsv:"Export CSV",settings:"Pengaturan",logout:"Keluar",sellerWa:"No. WhatsApp penjual (untuk tombol konfirmasi)",
@@ -304,7 +323,8 @@ const T = {
       loginErr:"Email atau password salah.",viewInv:"Lihat invoice",howPay:"Cara bayar: transfer sesuai total ke rekening berikut",back:"← Kembali",printPdf:"Cetak / Simpan PDF",shareWa:"Kirim via WA",
       invoice:"INVOICE",invNo:"No. Invoice",date:"Tanggal",billTo:"Kepada",product:"Produk",qty:"Qty",unitPrice:"Harga",subtotal:"Subtotal",
       payment:"Pembayaran",status:"Status",paidStamp:"LUNAS",unpaidStamp:"BELUM LUNAS",invWa:"Invoice",waMsg:"Halo, saya sudah pesan",perItem:"per",paidRev:"sudah dibayar"},
-  en:{addr:"Shipping address",addrPh:"Street, house no., RT/RW, kelurahan, kecamatan, city, postcode",errAddr:"Please enter your shipping address.",name:"Name",wa:"WhatsApp number",optional:"(optional)",chooseQty:"Choose quantity",note:"Note",
+  en:{ready:"Ready to ship",notReady:"Not ready",newBadge:"NEW",newOrders:"new order(s) received!",seeNew:"View",notifAsk:"Turn on sound & notifications for new orders",turnOn:"Turn on",notifOk:"Notifications on",
+      readyMsg:"Hi {name}, your Snackita order ({no}) is ready to ship to:\n{addr}\n\nTotal: {total}\nThank you! 🙏",addr:"Shipping address",addrPh:"Street, house no., RT/RW, kelurahan, kecamatan, city, postcode",errAddr:"Please enter your shipping address.",name:"Name",wa:"WhatsApp number",optional:"(optional)",chooseQty:"Choose quantity",note:"Note",
       totalQty:"Total qty",submit:"Order",thanks:"Thank you, order received!",orderNo:"Order no.",
       sendWa:"Send to seller on WhatsApp",again:"Place another order",adminLogin:"Seller login",password:"Password",
       login:"Sign in",exportCsv:"Export CSV",settings:"Settings",logout:"Sign out",sellerWa:"Seller WhatsApp number (for the confirm button)",
@@ -479,7 +499,8 @@ function initAdmin(){
   Store.onAuth(u=>{
     USER=u;
     $("vLogin").classList.toggle("hidden",!!u); $("vAdmin").classList.toggle("hidden",!u);
-    if(u && !initAdmin.sub){ initAdmin.sub=true; Store.onOrders(o=>{ORDERS=o||{};renderAdmin()}) }
+    if(u && !initAdmin.sub){ initAdmin.sub=true; Store.onOrders(o=>{ORDERS=o||{};detectNew();renderAdmin()}) }
+    if(u) showNotifBar();
   });
   $("lBtn").onclick=async()=>{
     $("eLogin").textContent="";
@@ -490,6 +511,12 @@ function initAdmin(){
   $("aSetBtn").onclick=()=>{$("aSettings").classList.toggle("hidden");fillSettings()};
   $("aSearch").oninput=renderOrders;
   $("aCsv").onclick=exportCsv;
+  $("newSeen").onclick=()=>{markSeen(Object.keys(ORDERS));FILTER="all";renderAdmin();$("orders").scrollIntoView({behavior:"smooth"})};
+  $("notifOn").onclick=async()=>{
+    unlockAudio(); try{localStorage.setItem("kr_sound","1")}catch(e){}
+    if("Notification" in window && Notification.permission==="default"){ try{await Notification.requestPermission()}catch(e){} }
+    beep(); toast(t("notifOk")); showNotifBar();
+  };
   $("sSave").onclick=async()=>{
     const prices={}; CONFIG.items.forEach(i=>{const v=parseInt($("sp_"+i.id).value,10); prices[i.id]=isNaN(v)||v<0?price(i.id):v});
     try{await Store.saveSettings({prices,open:$("sOpen").checked,sellerWa:$("sWa").value.replace(/\D/g,"")});toast(t("saved"));$("aSettings").classList.add("hidden")}
@@ -502,6 +529,48 @@ function fillSettings(){
      <input id="sp_${i.id}" type="number" inputmode="numeric" min="0" step="500" value="${price(i.id)}"></div>`).join("");
   $("sWa").value = SETTINGS.sellerWa||""; $("sOpen").checked = SETTINGS.open!==false;
 }
+/* ---- new-order notifications ---- */
+const SEEN_KEY="kr_seen_v1";
+let SEEN=(()=>{try{return new Set(JSON.parse(localStorage.getItem(SEEN_KEY))||[])}catch(e){return new Set()}})();
+let FIRST_SNAP=true, KNOWN=new Set(), AC=null;
+const hadSeenStore = (()=>{try{return localStorage.getItem(SEEN_KEY)!==null}catch(e){return false}})();
+function saveSeen(){try{localStorage.setItem(SEEN_KEY,JSON.stringify([...SEEN].slice(-2000)))}catch(e){}}
+function markSeen(ids){ids.forEach(i=>SEEN.add(i));saveSeen();updateNewUi()}
+const isNew = id => !SEEN.has(id);
+function detectNew(){
+  const ids=Object.keys(ORDERS);
+  if(FIRST_SNAP){ FIRST_SNAP=false; ids.forEach(i=>KNOWN.add(i));
+    if(!hadSeenStore){ markSeen(ids) } else updateNewUi(); return }
+  const fresh=ids.filter(i=>!KNOWN.has(i)); ids.forEach(i=>KNOWN.add(i));
+  if(!fresh.length){updateNewUi();return}
+  updateNewUi(); beep();
+  const o=ORDERS[fresh[fresh.length-1]];
+  if("Notification" in window && Notification.permission==="granted"){
+    try{ new Notification("🛒 Snackita — "+(o?.name||""),{body:`${o?.totalQty||""} pcs · ${rp(o?.totalCost)}`,tag:"snackita-"+fresh[0]}) }catch(e){}
+  }
+  if(navigator.vibrate) try{navigator.vibrate([120,60,120])}catch(e){}
+}
+function updateNewUi(){
+  const n=Object.keys(ORDERS).filter(isNew).length;
+  $("newAlert").classList.toggle("hidden",!n);
+  $("newAlertTxt").textContent=`🔔 ${n} ${t("newOrders")}`;
+  document.title=(n?`(${n}) `:"")+CONFIG.shopName+" Dashboard";
+}
+function unlockAudio(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==="suspended")AC.resume() }catch(e){} }
+function beep(){
+  try{ if(!AC) unlockAudio(); if(!AC) return;
+    [0,0.18].forEach((d,k)=>{const o=AC.createOscillator(),g=AC.createGain();o.type="sine";o.frequency.value=k?1318:988;
+      g.gain.setValueAtTime(0.0001,AC.currentTime+d);g.gain.exponentialRampToValueAtTime(0.3,AC.currentTime+d+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+d+0.25);o.connect(g).connect(AC.destination);o.start(AC.currentTime+d);o.stop(AC.currentTime+d+0.3)})
+  }catch(e){}
+}
+function showNotifBar(){
+  let soundOn=false; try{soundOn=localStorage.getItem("kr_sound")==="1"}catch(e){}
+  const permOk = !("Notification" in window) || Notification.permission!=="default";
+  $("notifBar").classList.toggle("hidden", soundOn && permOk && !!AC);
+}
+document.addEventListener("click",()=>{let on=false;try{on=localStorage.getItem("kr_sound")==="1"}catch(e){} if(on&&IS_ADMIN){unlockAudio();showNotifBar()}},{once:false,passive:true});
+
 const list = () => Object.entries(ORDERS).map(([id,o])=>({id,...o})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
 function renderAdmin(){
   if(!IS_ADMIN) return;
@@ -514,8 +583,9 @@ function renderAdmin(){
     `<div class="tile"><div class="k">${t("orders")}</div><div class="v">${all.length}</div><div class="s">${t("totalQty")}: ${tq}</div></div>
      <div class="tile"><div class="k">${t("revenue")}</div><div class="v">${rp(tc)}</div><div class="s">${rp(pc)} ${t("paidRev")}</div></div>` +
     CONFIG.items.map(i=>`<div class="tile"><div class="k">${esc(i.name)}</div><div class="v">${per[i.id]}</div><div class="s">${rp(per[i.id]*price(i.id))}</div></div>`).join("");
-  const counts={all:all.length,unpaid:all.filter(o=>!o.paid).length,paid:all.filter(o=>o.paid).length,open:all.filter(o=>!o.done).length,done:all.filter(o=>o.done).length};
-  $("tabs").innerHTML = ["all","unpaid","paid","open","done"].map(f=>`<button data-f="${f}" class="${FILTER===f?"on":""}">${t(f)} (${counts[f]})</button>`).join("");
+  const counts={all:all.length,unpaid:all.filter(o=>!o.paid).length,paid:all.filter(o=>o.paid).length,ready:all.filter(o=>o.ready&&!o.done).length,open:all.filter(o=>!o.done).length,done:all.filter(o=>o.done).length};
+  updateNewUi();
+  $("tabs").innerHTML = ["all","unpaid","paid","ready","open","done"].map(f=>`<button data-f="${f}" class="${FILTER===f?"on":""}">${t(f)} (${counts[f]})</button>`).join("");
   $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;renderAdmin()});
   renderOrders();
 }
@@ -524,29 +594,48 @@ function renderOrders(){
   const rows=list().filter(o=>{
     if(FILTER==="unpaid"&&o.paid)return false; if(FILTER==="paid"&&!o.paid)return false;
     if(FILTER==="open"&&o.done)return false; if(FILTER==="done"&&!o.done)return false;
+    if(FILTER==="ready"&&(!o.ready||o.done))return false;
     return !q || (o.name||"").toLowerCase().includes(q) || (o.address||"").toLowerCase().includes(q) || orderNo(o.id).toLowerCase().includes(q);
   });
   if(!rows.length){$("orders").innerHTML=`<div class="empty">${t("noOrders")}</div>`;return}
   const fmt=new Intl.DateTimeFormat(LANG==="id"?"id-ID":"en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
   $("orders").innerHTML = rows.map(o=>{
     const wa=(o.wa||"").replace(/\D/g,"").replace(/^0/,"62");
-    return `<div class="ord">
+    const nw=isNew(o.id);
+    return `<div class="ord ${o.paid?"is-paid":""} ${o.done?"is-done":""} ${nw?"is-new":""}">
       <div class="top">
         <div><div class="nm">${esc(o.name)}</div>
           <div class="meta">${orderNo(o.id)} · ${o.createdAt?fmt.format(new Date(o.createdAt)):""}${wa?` · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">${esc(o.wa)}</a>`:""}</div></div>
         <div class="amt">${rp(o.totalCost)}</div>
+      </div>
+      <div class="badges">
+        ${nw?`<span class="bdg new" data-seen="${o.id}">${t("newBadge")} ✕</span>`:""}
+        <span class="bdg ${o.paid?"paid":"unpaid"}">${o.paid?"✓ "+t("paidStamp"):t("unpaidStamp")}</span>
+        ${o.ready&&!o.done?`<span class="bdg ready">📦 ${t("ready").toUpperCase()}</span>`:""}
+        ${o.done?`<span class="bdg done">🚚 ${t("done").toUpperCase()}</span>`:""}
       </div>
       ${o.address?`<div class="muted" style="margin-top:6px;white-space:pre-line">📍 ${esc(o.address)}</div>`:""}
       <div class="lines">${Object.values(o.items||{}).map(it=>`${esc(it.name)}: <b>${it.qty}</b>`).join(" · ")} · ${t("totalQty")}: <b>${o.totalQty}</b>
         ${o.note?`<div class="muted" style="margin-top:4px">“${esc(o.note)}”</div>`:""}</div>
       <div class="acts">
         <button class="chip ${o.paid?"paid":""}" data-a="paid" data-id="${o.id}">${o.paid?"✓ "+t("paid"):t("unpaid")}</button>
+        <button class="chip ${o.ready?"ready":""}" data-a="ready" data-id="${o.id}">${o.ready?"📦 "+t("ready"):t("notReady")}</button>
         <button class="chip ${o.done?"done":""}" data-a="done" data-id="${o.id}">${o.done?"✓ "+t("done"):t("open")}</button>
         <button class="chip" data-a="inv" data-id="${o.id}">🧾 Invoice</button>
         <button class="chip del" data-a="del" data-id="${o.id}">${t("del")}</button>
       </div></div>`}).join("");
+  $("orders").querySelectorAll("[data-seen]").forEach(b=>b.onclick=()=>{markSeen([b.dataset.seen]);renderOrders()});
   $("orders").querySelectorAll("button[data-a]").forEach(b=>b.onclick=async()=>{
     const id=b.dataset.id,o=ORDERS[id],a=b.dataset.a;
+    if(isNew(id)) markSeen([id]);
+    // Turning on "ready": offer to tell the buyer on WhatsApp (opened right away so the browser doesn't block it)
+    if(a==="ready" && !o.ready){
+      const wa=(o.wa||"").replace(/\D/g,"").replace(/^0/,"62");
+      if(wa){
+        const msg=t("readyMsg").replace("{name}",o.name||"").replace("{no}",orderNo(id)).replace("{addr}",o.address||"-").replace("{total}",rp(o.totalCost));
+        window.open("https://wa.me/"+wa+"?text="+encodeURIComponent(msg),"_blank","noopener");
+      } else toast(t("ready")+" ✓");
+    }
     try{
       if(a==="inv"){ showInvoice({id,...o}); return }
       if(a==="del"){ if(confirm(t("confirmDel"))) await Store.deleteOrder(id) }
@@ -555,9 +644,9 @@ function renderOrders(){
   });
 }
 function exportCsv(){
-  const head=["Order No","Date","Name","WhatsApp","Address",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Paid","Delivered","Note"];
+  const head=["Order No","Date","Name","WhatsApp","Address",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Paid","Ready","Delivered","Note"];
   const rows=list().map(o=>[orderNo(o.id),o.createdAt?new Date(o.createdAt).toISOString().replace("T"," ").slice(0,16):"",o.name,o.wa,o.address||"",
-    ...CONFIG.items.map(i=>o.items?.[i.id]?.qty||0),o.totalQty,o.totalCost,o.paid?"Y":"N",o.done?"Y":"N",o.note||""]);
+    ...CONFIG.items.map(i=>o.items?.[i.id]?.qty||0),o.totalQty,o.totalCost,o.paid?"Y":"N",o.ready?"Y":"N",o.done?"Y":"N",o.note||""]);
   const csv=[head,...rows].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv"}));
   a.download="orders-keripik-"+new Date().toISOString().slice(0,10)+".csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
