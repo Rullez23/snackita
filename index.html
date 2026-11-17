@@ -99,7 +99,7 @@
   .paybox input{margin-top:3px;accent-color:var(--brand)}
   .paybox label:has(input:checked){border-color:var(--brand);background:#FFF4EE}
   .paypill{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:10px 12px;margin-top:12px;font-size:14px}
-  .paypill b{display:block}
+  .paypill .pt{display:block;font-weight:800}
   .chip.ready{background:#F3E8FF;border-color:#DCC4F7;color:#6B2FB3;font-weight:650}
   .alert{display:flex;align-items:center;gap:10px;background:var(--brand);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;font-weight:650}
   .alert span{flex:1}
@@ -190,10 +190,18 @@
   </header>
 
   <div id="demoNote" class="notice hidden"></div>
-  <button class="myorders hidden" id="myOrdersBtn"><span>📦 <span data-t="myOrders">Pesanan saya</span> (<span id="myCount">0</span>)</span><span>›</span></button>
+  <button class="myorders hidden" id="myOrdersBtn"><span>🔍 <span data-t="trackOrMine">Lacak pesanan</span><span id="myCountWrap"> · <span data-t="myOrders">Pesanan saya</span> (<span id="myCount">0</span>)</span></span><span>›</span></button>
 
   <!-- BUYER TRACKING VIEW -->
   <section id="vTrack" class="hidden">
+    <div class="card">
+      <label for="tCode" data-t="enterNo">Cek status dengan No. pesanan</label>
+      <div class="row" style="gap:8px">
+        <input id="tCode" type="text" placeholder="K-XXXXX" maxlength="12" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;flex:1">
+        <button class="btn" id="tGo" style="flex:0 0 auto" data-t="trackGo">Lacak</button>
+      </div>
+      <div class="err" id="eCode"></div>
+    </div>
     <h2 style="margin:0 0 4px" data-t="trackTitle">Status pesanan</h2>
     <p class="muted" style="margin:0 0 12px" data-t="trackSub">Status diperbarui otomatis oleh penjual.</p>
     <div id="trackList"></div>
@@ -362,7 +370,7 @@ const CONFIG = {
 <script>
 /* ---------- i18n ---------- */
 const T = {
-  id:{myOrders:"Pesanan saya",trackTitle:"Status pesanan",trackSub:"Status diperbarui otomatis oleh penjual.",orderAgain:"← Pesan lagi",trackBtn:"📦 Lacak status pesanan",saveLink:"Simpan link ini untuk cek status kapan saja:",copy:"Salin",copied:"Link disalin",
+  id:{trackOrMine:"Lacak pesanan",enterNo:"Cek status dengan No. pesanan",trackGo:"Lacak",codeNotFound:"No. pesanan tidak ditemukan. Cek lagi, contoh: K-AB12C",codeEmpty:"Masukkan No. pesanan.",myOrders:"Pesanan saya",trackTitle:"Status pesanan",trackSub:"Status diperbarui otomatis oleh penjual.",orderAgain:"← Pesan lagi",trackBtn:"📦 Lacak status pesanan",saveLink:"Simpan link ini untuk cek status kapan saja:",copy:"Salin",copied:"Link disalin",
       stReceived:"Order diterima",stReceivedS:"Penjual sudah menerima pesanan Anda",stPaid:"Pembayaran diterima",stPaidS:"Transfer Anda sudah dikonfirmasi",stPaidWait:"Menunggu pembayaran",
       stReady:"Order siap dikirim",stReadyS:"Pesanan sedang dikemas / siap dikirim",stDone:"Order terkirim",stDoneS:"Pesanan sudah dikirim",trackNotFound:"Pesanan tidak ditemukan atau sudah dihapus penjual.",trackLink:"Lacak pesanan",loading:"Memuat…",removeTrack:"Hapus dari daftar",
       ready:"Siap kirim",notReady:"Belum siap",newBadge:"BARU",newOrders:"pesanan baru masuk!",seeNew:"Lihat",notifAsk:"Nyalakan suara & notifikasi untuk pesanan baru",turnOn:"Nyalakan",notifOk:"Notifikasi aktif",
@@ -382,7 +390,7 @@ const T = {
       loginErr:"Email atau password salah.",viewInv:"Lihat invoice",howPay:"Cara bayar: transfer sesuai total ke rekening berikut",back:"← Kembali",printPdf:"Cetak / Simpan PDF",shareWa:"Kirim via WA",
       invoice:"INVOICE",invNo:"No. Invoice",date:"Tanggal",billTo:"Kepada",product:"Produk",qty:"Qty",unitPrice:"Harga",subtotal:"Subtotal",
       payment:"Pembayaran",status:"Status",paidStamp:"LUNAS",unpaidStamp:"BELUM TERBAYAR",invWa:"Invoice",waMsg:"Halo, saya sudah pesan",perItem:"per",paidRev:"sudah dibayar"},
-  en:{myOrders:"My orders",trackTitle:"Order status",trackSub:"Status is updated automatically by the seller.",orderAgain:"← Order again",trackBtn:"📦 Track order status",saveLink:"Save this link to check your status anytime:",copy:"Copy",copied:"Link copied",
+  en:{trackOrMine:"Track order",enterNo:"Check status with your order number",trackGo:"Track",codeNotFound:"Order number not found. Please check it, e.g. K-AB12C",codeEmpty:"Enter your order number.",myOrders:"My orders",trackTitle:"Order status",trackSub:"Status is updated automatically by the seller.",orderAgain:"← Order again",trackBtn:"📦 Track order status",saveLink:"Save this link to check your status anytime:",copy:"Copy",copied:"Link copied",
       stReceived:"Order received",stReceivedS:"The seller has received your order",stPaid:"Payment received",stPaidS:"Your transfer has been confirmed",stPaidWait:"Waiting for payment",
       stReady:"Order ready to ship",stReadyS:"Your order is packed / ready to ship",stDone:"Order delivered",stDoneS:"Your order has been sent",trackNotFound:"Order not found, or removed by the seller.",trackLink:"Track order",loading:"Loading…",removeTrack:"Remove from list",
       ready:"Ready to ship",notReady:"Not ready",newBadge:"NEW",newOrders:"new order(s) received!",seeNew:"View",notifAsk:"Turn on sound & notifications for new orders",turnOn:"Turn on",notifOk:"Notifications on",
@@ -430,6 +438,9 @@ const Store = (()=>{
       async updateStatus(id,p){const d=load();d.status=d.status||{};d.status[id]={...(d.status[id]||{}),...p};save(d);stEmit(id)},
       async deleteStatus(id){const d=load();if(d.status)delete d.status[id];save(d);stEmit(id)},
       onStatus(id,cb){(stSubs[id]=stSubs[id]||[]).push(cb);cb((load().status||{})[id]||null)},
+      async setLookup(code,id){const d=load();d.lookup=d.lookup||{};d.lookup[code]=id;save(d)},
+      async deleteLookup(code){const d=load();if(d.lookup)delete d.lookup[code];save(d)},
+      async lookup(code){return (load().lookup||{})[code]||null},
       onOrders(cb){subs.push(cb);cb(load().orders||{})},
       async updateOrder(id,p){const d=load();Object.assign(d.orders[id],p);save(d);emit()},
       async deleteOrder(id){const d=load();delete d.orders[id];save(d);emit()},
@@ -451,6 +462,9 @@ const Store = (()=>{
     updateStatus(id,p){return db.ref(R+"/status/"+id).update(p)},
     deleteStatus(id){return db.ref(R+"/status/"+id).remove()},
     onStatus(id,cb){db.ref(R+"/status/"+id).on("value",s=>cb(s.val()),()=>cb(null))},
+    setLookup(code,id){return db.ref(R+"/lookup/"+code).set(id)},
+    deleteLookup(code){return db.ref(R+"/lookup/"+code).remove()},
+    async lookup(code){const s=await db.ref(R+"/lookup/"+code).get();return s.exists()?s.val():null},
     onAuth(cb){auth.onAuthStateChanged(cb)},
     signIn(e,p){return auth.signInWithEmailAndPassword(e,p)},
     signOut(){return auth.signOut()}
@@ -550,12 +564,15 @@ $("orderForm").onsubmit = async e=>{
   try{
     const id=await Store.addOrder(order);
     try{ await Store.setStatus(id,statusFrom({...order,paid:false,ready:false,done:false,createdAt:null})) }catch(e){console.warn("status",e)}
+    try{ await Store.setLookup(codeOf(id),id) }catch(e){console.warn("lookup",e)}
     addMyOrder(id); updateMyBtn();
     showDone(id,order);
   }catch(err){console.error(err);toast(t("errSend"))}
   finally{btn.disabled=false;btn.textContent=t("submit")}
 };
 const orderNo = (id,createdAt) => "K-" + String(id).slice(-5).toUpperCase();
+const codeOf = id => String(id).slice(-5).toUpperCase();
+const normCode = v => String(v||"").toUpperCase().replace(/\s+/g,"").replace(/^K-?/,"").replace(/[.#$\[\]\/]/g,"");
 
 let LAST=null;
 function showDone(id,o){
@@ -636,7 +653,8 @@ function markSeen(ids){ids.forEach(i=>SEEN.add(i));saveSeen();updateNewUi()}
 const isNew = id => !SEEN.has(id);
 let BACKFILLED=false;
 function backfillStatus(){ if(BACKFILLED) return; BACKFILLED=true;
-  Object.entries(ORDERS).forEach(([id,o])=>{ Store.setStatus(id,statusFrom(o)).catch(e=>console.warn("backfill",e)) }) }
+  Object.entries(ORDERS).forEach(([id,o])=>{ Store.setStatus(id,statusFrom(o)).catch(e=>console.warn("backfill",e));
+    Store.setLookup(codeOf(id),id).catch(e=>console.warn("lookup",e)) }) }
 function detectNew(){
   backfillStatus();
   const ids=Object.keys(ORDERS);
@@ -746,7 +764,7 @@ function renderOrders(){
     if(isNew(id)) markSeen([id]);
     try{
       if(a==="inv"){ showInvoice({id,...o}); return }
-      if(a==="del"){ if(confirm(t("confirmDel"))){ await Store.deleteOrder(id); try{await Store.deleteStatus(id)}catch(e){} } }
+      if(a==="del"){ if(confirm(t("confirmDel"))){ await Store.deleteOrder(id); try{await Store.deleteStatus(id)}catch(e){} try{await Store.deleteLookup(codeOf(id))}catch(e){} } }
       else { await Store.updateOrder(id,{[a]:!o[a]}); try{ await Store.updateStatus(id,{[a]:!o[a]}) }catch(e){console.warn(e)} }
     }catch(e){console.error(e);toast(t("errSend"))}
   });
@@ -813,8 +831,8 @@ $("dInv").onclick=()=>LAST&&showInvoice(LAST);
 const TRK={}; // id -> status (undefined=loading, null=not found)
 const TRK_SUB=new Set();
 function updateMyBtn(){
-  const n=myOrders().length; $("myCount").textContent=n;
-  $("myOrdersBtn").classList.toggle("hidden", IS_ADMIN || !n || !$("vTrack").classList.contains("hidden"));
+  const n=myOrders().length; $("myCount").textContent=n; $("myCountWrap").classList.toggle("hidden",!n);
+  $("myOrdersBtn").classList.toggle("hidden", IS_ADMIN || !$("vTrack").classList.contains("hidden"));
 }
 function openTrack(ids){
   $("vOrder").classList.add("hidden"); $("vDone").classList.add("hidden"); $("bar").classList.add("hidden");
@@ -841,8 +859,8 @@ function renderTrack(){
     const curLbl = steps[cur].t;
     const curCls = sg==="done"?"background:#E8EEF9;color:#2A4F9A":sg==="ready"?"background:#F3E8FF;color:#6B2FB3":sg==="processing"?"background:#FFF1E6;color:#B4541F":"background:#F4F1EC;color:#2B2118";
     const payHtmlT = st.paid
-      ? `<div class="paypill" style="background:#E3F3E9;color:#1F5E3A"><span>✅</span><span><b>${esc(t("payPaid"))}</b>${esc(t("payPaidS"))}</span></div>`
-      : `<div class="paypill" style="background:#FCEBD0;color:#6E470A"><span>⏳</span><span><b>${esc(t("payUnpaid"))}</b><span style="white-space:pre-line">${st.payMethod==="cod"?esc(t("codNote")):payHtml()}</span></span></div>`;
+      ? `<div class="paypill" style="background:#E3F3E9;color:#1F5E3A"><span>✅</span><span><span class="pt">${esc(t("payPaid"))}</span>${esc(t("payPaidS"))}</span></div>`
+      : `<div class="paypill" style="background:#FCEBD0;color:#6E470A"><span>⏳</span><span><span class="pt">${esc(t("payUnpaid"))}</span><span style="white-space:pre-line">${st.payMethod==="cod"?esc(t("codNote")):payHtml()}</span></span></div>`;
     return `<div class="trk">
       <div class="hd"><div><div class="no">${orderNo(id)}</div>
         <div class="muted">${st.createdAt?fmt.format(new Date(st.createdAt)):""}</div>
@@ -858,6 +876,21 @@ function renderTrack(){
   $("trackList").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{removeMyOrder(b.dataset.rm);openTrack.ids=openTrack.ids.filter(x=>x!==b.dataset.rm);renderTrack();updateMyBtn()});
 }
 $("myOrdersBtn").onclick=()=>openTrack(myOrders());
+async function trackByCode(){
+  const code=normCode($("tCode").value); $("eCode").textContent="";
+  if(!code){$("eCode").textContent=t("codeEmpty");return}
+  $("tGo").disabled=true;
+  try{
+    const id=await Store.lookup(code);
+    if(!id){$("eCode").textContent=t("codeNotFound");return}
+    addMyOrder(id); updateMyBtn();
+    const ids=[id,...(openTrack.ids||[]).filter(x=>x!==id)];
+    openTrack(ids); $("tCode").value="";
+  }catch(e){console.error(e);$("eCode").textContent=t("codeNotFound")}
+  finally{$("tGo").disabled=false}
+}
+$("tGo").onclick=trackByCode;
+$("tCode").onkeydown=e=>{if(e.key==="Enter")trackByCode()};
 $("dTrack").onclick=()=>LAST&&openTrack([LAST.id]);
 $("trackBack").onclick=()=>{ if(TRACK_ID) history.replaceState(null,"",BASE_URL);
   $("vTrack").classList.add("hidden"); $("vOrder").classList.remove("hidden"); $("bar").classList.remove("hidden");
