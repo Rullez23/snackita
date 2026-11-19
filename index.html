@@ -91,6 +91,15 @@
   .seg button:first-child{border-left:0}
   .seg button.past{background:#F4F1EC;color:var(--ink)}
   .seg button.on{background:var(--ink);color:#fff;font-weight:700}
+  .segl{font-size:12px;color:var(--muted);font-weight:650;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+  .irow{margin-bottom:6px}
+  .irow .inm{font-size:14px;margin-bottom:3px}
+  .seg.sm{margin:0}
+  .seg.sm button{padding:6px 2px;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:1px}
+  .irow2{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:5px 0}
+  .ist{font-size:12px;font-weight:700;border-radius:999px;padding:4px 9px;white-space:nowrap}
+  .ist.received{background:#F4F1EC;color:#2B2118} .ist.processing{background:#FFF1E6;color:#B4541F}
+  .ist.ready{background:#F3E8FF;color:#6B2FB3} .ist.done{background:#E8EEF9;color:#2A4F9A}
   .bdg.proc{background:#FFF1E6;color:#B4541F}
   .bdg.cod{background:#2B2118;color:#fff}
   .paybox{display:flex;gap:10px}
@@ -384,7 +393,8 @@ const T = {
       orders:"Pesanan",revenue:"Omzet",paid:"Lunas",unpaid:"Belum terbayar",done:"Terkirim",all:"Semua",open:"Belum kirim",received:"Diterima",processing:"Diproses",
       payMethod:"Metode pembayaran",pmTransfer:"Transfer Bank BCA",pmTransferS:"Transfer sebelum dikirim",pmCodS:"Bayar tunai saat barang diterima",method:"Metode",
       codNote:"COD — bayar tunai saat pesanan diterima.",stProcessing:"Order diproses",stProcessingS:"Pesanan sedang disiapkan",payPaid:"Order lunas",payUnpaid:"Order belum terbayar",payPaidS:"Pembayaran sudah dikonfirmasi penjual",
-      stage:"Status",
+      stage:"Status",allItems:"Semua produk",perItem2:"Status per produk",partialShort:"Sebagian terkirim",stPartial:"Order sebagian terkirim",
+      partialMsg:"Halo {name}, update pesanan Snackita Anda ({no}).\nSudah dikirim:",followUp:"Menyusul",allSent:"Semua produk sudah dikirim. Terima kasih! 🙏",
       del:"Hapus",confirmDel:"Hapus pesanan ini?",saved:"Tersimpan",noOrders:"Belum ada pesanan.",
       demo:"Mode demo: pesanan hanya tersimpan di perangkat ini. Isi konfigurasi Firebase agar pesanan masuk ke dashboard penjual. Dashboard: tambahkan ?admin di akhir link.",
       loginErr:"Email atau password salah.",viewInv:"Lihat invoice",howPay:"Cara bayar: transfer sesuai total ke rekening berikut",back:"← Kembali",printPdf:"Cetak / Simpan PDF",shareWa:"Kirim via WA",
@@ -404,7 +414,8 @@ const T = {
       orders:"Orders",revenue:"Revenue",paid:"Paid",unpaid:"Unpaid",done:"Delivered",all:"All",open:"Not delivered",received:"Received",processing:"Processing",
       payMethod:"Payment method",pmTransfer:"BCA bank transfer",pmTransferS:"Transfer before shipping",pmCodS:"Pay cash on delivery",method:"Method",
       codNote:"COD — pay cash when the order arrives.",stProcessing:"Order processing",stProcessingS:"Your order is being prepared",payPaid:"Order paid",payUnpaid:"Order unpaid",payPaidS:"Payment confirmed by the seller",
-      stage:"Status",
+      stage:"Status",allItems:"All products",perItem2:"Status per product",partialShort:"Partly sent",stPartial:"Order partly sent",
+      partialMsg:"Hi {name}, an update on your Snackita order ({no}).\nSent:",followUp:"Coming next",allSent:"All products have been sent. Thank you! 🙏",
       del:"Delete",confirmDel:"Delete this order?",saved:"Saved",noOrders:"No orders yet.",
       demo:"Demo mode: orders are saved on this device only. Add your Firebase config so orders reach the seller dashboard. Dashboard: add ?admin to the end of the link.",
       loginErr:"Wrong email or password.",viewInv:"View invoice",howPay:"How to pay: transfer the total to this account",back:"← Back",printPdf:"Print / Save PDF",shareWa:"Send via WA",
@@ -419,6 +430,10 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("on"),1800)}
 
 /* ---------- Store (Firebase or local demo) ---------- */
+function applyPatch(obj,p){ obj=JSON.parse(JSON.stringify(obj||{}));
+  Object.entries(p).forEach(([k,v])=>{ const parts=k.split("/"); let o=obj;
+    parts.slice(0,-1).forEach(x=>{ if(typeof o[x]!=="object"||o[x]===null) o[x]={}; o=o[x] }); o[parts[parts.length-1]]=v });
+  return obj }
 const DEMO = !CONFIG.firebase.apiKey;
 const Store = (()=>{
   if (DEMO){
@@ -435,14 +450,14 @@ const Store = (()=>{
       async saveSettings(s){const d=load();d.settings=s;save(d);emitS()},
       async addOrder(o){const d=load();const id="d"+Date.now().toString(36);o.createdAt=Date.now();d.orders[id]=o;save(d);emit();return id},
       async setStatus(id,st){const d=load();d.status=d.status||{};d.status[id]={...st,createdAt:st.createdAt&&typeof st.createdAt==="number"?st.createdAt:(d.orders[id]?.createdAt||Date.now())};save(d);stEmit(id)},
-      async updateStatus(id,p){const d=load();d.status=d.status||{};d.status[id]={...(d.status[id]||{}),...p};save(d);stEmit(id)},
+      async updateStatus(id,p){const d=load();d.status=d.status||{};d.status[id]=applyPatch(d.status[id]||{},p);save(d);stEmit(id)},
       async deleteStatus(id){const d=load();if(d.status)delete d.status[id];save(d);stEmit(id)},
       onStatus(id,cb){(stSubs[id]=stSubs[id]||[]).push(cb);cb((load().status||{})[id]||null)},
       async setLookup(code,id){const d=load();d.lookup=d.lookup||{};d.lookup[code]=id;save(d)},
       async deleteLookup(code){const d=load();if(d.lookup)delete d.lookup[code];save(d)},
       async lookup(code){return (load().lookup||{})[code]||null},
       onOrders(cb){subs.push(cb);cb(load().orders||{})},
-      async updateOrder(id,p){const d=load();Object.assign(d.orders[id],p);save(d);emit()},
+      async updateOrder(id,p){const d=load();d.orders[id]=applyPatch(d.orders[id],p);save(d);emit()},
       async deleteOrder(id){const d=load();delete d.orders[id];save(d);emit()},
       onAuth(cb){authCb=cb;cb(user)},
       async signIn(){user={uid:"demo"};authCb&&authCb(user)},
@@ -481,9 +496,15 @@ const TRACK_ID = new URLSearchParams(location.search).get("track");
 const BASE_URL = location.origin + location.pathname;
 const trackUrl = id => BASE_URL + "?track=" + encodeURIComponent(id);
 const STAGES=["received","processing","ready","done"];
-const stageOf = o => (o && STAGES.includes(o.stage)) ? o.stage : (o?.done?"done":o?.ready?"ready":"received");
+const orderStage = o => (o && STAGES.includes(o.stage)) ? o.stage : (o?.done?"done":o?.ready?"ready":"received");
+const itemStage = (o,k) => STAGES.includes(o?.items?.[k]?.stage) ? o.items[k].stage : orderStage(o);
+const stageOf = o => { const ks=Object.keys(o?.items||{}); if(!ks.length) return orderStage(o);
+  return STAGES[Math.min(...ks.map(k=>STAGES.indexOf(itemStage(o,k))))] };
+const isPartial = o => { const ks=Object.keys(o?.items||{}); if(ks.length<2) return false;
+  const d=ks.filter(k=>itemStage(o,k)==="done").length; return d>0 && d<ks.length };
+const stageIcon = {received:"📥",processing:"⚙️",ready:"📦",done:"🚚"};
 const isCod = o => o?.payMethod==="cod";
-const statusFrom = o => { const items={}; Object.entries(o.items||{}).forEach(([k,v])=>items[k]={name:v.name,qty:v.qty,price:v.price});
+const statusFrom = o => { const items={}; Object.entries(o.items||{}).forEach(([k,v])=>items[k]={name:v.name,qty:v.qty,price:v.price,stage:itemStage(o,k)});
   const sg=stageOf(o);
   const st={paid:!!o.paid,ready:sg==="ready"||sg==="done",done:sg==="done",stage:sg,payMethod:o.payMethod||"transfer",totalQty:o.totalQty||0,totalCost:o.totalCost||0,items};
   if(typeof o.createdAt==="number") st.createdAt=o.createdAt; return st };
@@ -731,12 +752,17 @@ function renderOrders(){
         ${nw?`<span class="bdg new" data-seen="${o.id}">${t("newBadge")} ✕</span>`:""}
         <span class="bdg ${o.paid?"paid":"unpaid"}">${o.paid?"✓ "+t("paidStamp"):t("unpaidStamp")}</span>
         ${isCod(o)?`<span class="bdg cod">COD</span>`:""}
+        ${isPartial(o)?`<span class="bdg done">🚚 ${t("partialShort").toUpperCase()}</span>`:""}
         ${(()=>{const sg=stageOf(o);return sg==="processing"?`<span class="bdg proc">⚙️ ${t("processing").toUpperCase()}</span>`:sg==="ready"?`<span class="bdg ready">📦 ${t("ready").toUpperCase()}</span>`:sg==="done"?`<span class="bdg done">🚚 ${t("done").toUpperCase()}</span>`:""})()}
       </div>
       ${o.address?`<div class="muted" style="margin-top:6px;white-space:pre-line">📍 ${esc(o.address)}</div>`:""}
       <div class="lines">${Object.values(o.items||{}).map(it=>`${esc(it.name)}: <b>${it.qty}</b>`).join(" · ")} · ${t("totalQty")}: <b>${o.totalQty}</b>
         ${o.note?`<div class="muted" style="margin-top:4px">“${esc(o.note)}”</div>`:""}</div>
-      <div class="seg">${(()=>{const ci=STAGES.indexOf(stageOf(o));return STAGES.map((sg,i)=>`<button class="${i===ci?"on":i<ci?"past":""}" data-stage="${sg}" data-id="${o.id}">${t(sg)}</button>`).join("")})()}</div>
+      ${Object.keys(o.items||{}).length>1?`<div class="segl">${t("allItems")}</div>`:""}
+      <div class="seg">${(()=>{const ci=STAGES.indexOf(stageOf(o));return STAGES.map((sg,i)=>`<button class="${i===ci&&!isPartial(o)?"on":i<=ci?"past":""}" data-stage="${sg}" data-id="${o.id}">${t(sg)}</button>`).join("")})()}</div>
+      ${Object.keys(o.items||{}).length>1?`<div class="segl">${t("perItem2")}</div>`+Object.entries(o.items).map(([k,it])=>{const ci=STAGES.indexOf(itemStage(o,k));
+        return `<div class="irow"><div class="inm">${esc(it.name)} <b>×${it.qty}</b></div>
+          <div class="seg sm">${STAGES.map((sg,i)=>`<button class="${i===ci?"on":i<ci?"past":""}" data-istage="${sg}" data-k="${k}" data-id="${o.id}" title="${t(sg)}">${stageIcon[sg]}<span>${t(sg)}</span></button>`).join("")}</div></div>`}).join(""):""}
       <div class="acts">
         <button class="chip ${o.paid?"paid":""}" data-a="paid" data-id="${o.id}">${o.paid?"✓ "+t("paid"):"💰 "+t("unpaid")}</button>
         <button class="chip" data-a="inv" data-id="${o.id}">🧾 Invoice</button>
@@ -746,7 +772,7 @@ function renderOrders(){
   $("orders").querySelectorAll("button[data-stage]").forEach(b=>b.onclick=async()=>{
     const id=b.dataset.id,o=ORDERS[id],sg=b.dataset.stage;
     if(isNew(id)) markSeen([id]);
-    if(stageOf(o)===sg) return;
+    if(stageOf(o)===sg && !isPartial(o)) return;
     if(sg==="ready"){
       const wa=(o.wa||"").replace(/\D/g,"").replace(/^0/,"62");
       if(wa){
@@ -756,6 +782,30 @@ function renderOrders(){
       }
     }
     const i=STAGES.indexOf(sg), patch={stage:sg,ready:i>=2,done:i===3};
+    Object.keys(o.items||{}).forEach(k=>patch["items/"+k+"/stage"]=sg);
+    try{ await Store.updateOrder(id,patch); try{ await Store.updateStatus(id,patch) }catch(e){console.warn(e)} }
+    catch(e){console.error(e);toast(t("errSend"))}
+  });
+  // per-product status
+  $("orders").querySelectorAll("button[data-istage]").forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.id,o=ORDERS[id],k=b.dataset.k,sg=b.dataset.istage;
+    if(isNew(id)) markSeen([id]);
+    if(itemStage(o,k)===sg) return;
+    const next={...o,items:{...o.items}}; Object.keys(o.items).forEach(x=>next.items[x]={...o.items[x],stage:itemStage(o,x)}); next.items[k].stage=sg;
+    const all=stageOf(next), ai=STAGES.indexOf(all);
+    const patch={["items/"+k+"/stage"]:sg, stage:all, ready:ai>=2, done:ai===3};
+    Object.keys(o.items).forEach(x=>{ if(x!==k && !STAGES.includes(o.items[x].stage)) patch["items/"+x+"/stage"]=next.items[x].stage });
+    // Product sent: offer a WhatsApp update listing what's sent and what follows
+    if(sg==="done"){
+      const wa=(o.wa||"").replace(/\D/g,"").replace(/^0/,"62");
+      if(wa){
+        const sent=Object.values(next.items).filter(x=>x.stage==="done").map(x=>`✅ ${x.name} ×${x.qty}`).join("\n");
+        const pend=Object.values(next.items).filter(x=>x.stage!=="done").map(x=>`⏳ ${x.name} ×${x.qty}`).join("\n");
+        const msg=t("partialMsg").replace("{name}",o.name||"").replace("{no}",orderNo(id))+`\n${sent}`+(pend?`\n\n${t("followUp")}:\n${pend}`:`\n\n${t("allSent")}`)
+          +(isCod(o)&&!o.paid?`\n${t("codNote")}`:"")+`\n\n${t("trackLink")}: ${trackUrl(id)}`;
+        window.open("https://wa.me/"+wa+"?text="+encodeURIComponent(msg),"_blank","noopener");
+      }
+    }
     try{ await Store.updateOrder(id,patch); try{ await Store.updateStatus(id,patch) }catch(e){console.warn(e)} }
     catch(e){console.error(e);toast(t("errSend"))}
   });
@@ -770,9 +820,9 @@ function renderOrders(){
   });
 }
 function exportCsv(){
-  const head=["Order No","Date","Name","WhatsApp","Address",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Payment Method","Payment","Status","Note"];
+  const head=["Order No","Date","Name","WhatsApp","Address",...CONFIG.items.map(i=>"Qty "+i.name),"Total Qty","Total Cost","Payment Method","Payment","Status","Status per Product","Note"];
   const rows=list().map(o=>[orderNo(o.id),o.createdAt?new Date(o.createdAt).toISOString().replace("T"," ").slice(0,16):"",o.name,o.wa,o.address||"",
-    ...CONFIG.items.map(i=>o.items?.[i.id]?.qty||0),o.totalQty,o.totalCost,isCod(o)?"COD":"Transfer",o.paid?"Lunas":"Belum terbayar",t(stageOf(o)),o.note||""]);
+    ...CONFIG.items.map(i=>o.items?.[i.id]?.qty||0),o.totalQty,o.totalCost,isCod(o)?"COD":"Transfer",o.paid?"Lunas":"Belum terbayar",isPartial(o)?t("partialShort"):t(stageOf(o)),Object.entries(o.items||{}).map(([k,it])=>`${it.name}: ${t(itemStage(o,k))}`).join("; "),o.note||""]);
   const csv=[head,...rows].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv"}));
   a.download="orders-keripik-"+new Date().toISOString().slice(0,10)+".csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
@@ -856,7 +906,7 @@ function renderTrack(){
       {t:t("stReady"), s:t("stReadyS")},
       {t:t("stDone"), s:t("stDoneS")}
     ].map((x,i)=>({...x,on:i<=cur}));
-    const curLbl = steps[cur].t;
+    const curLbl = isPartial(st) ? t("stPartial") : steps[cur].t;
     const curCls = sg==="done"?"background:#E8EEF9;color:#2A4F9A":sg==="ready"?"background:#F3E8FF;color:#6B2FB3":sg==="processing"?"background:#FFF1E6;color:#B4541F":"background:#F4F1EC;color:#2B2118";
     const payHtmlT = st.paid
       ? `<div class="paypill" style="background:#E3F3E9;color:#1F5E3A"><span>✅</span><span><span class="pt">${esc(t("payPaid"))}</span>${esc(t("payPaidS"))}</span></div>`
@@ -870,7 +920,11 @@ function renderTrack(){
         <div style="font-weight:800;white-space:nowrap">${rp(st.totalCost)}</div></div>
       ${payHtmlT}
       <ul class="tl">${steps.map((x,i)=>`<li class="${x.on?"on":""} ${i===cur?"now":""}"><span class="dot">${x.on?"✓":""}</span>${esc(x.t)}<small>${esc(x.s||"")}</small></li>`).join("")}</ul>
-      <div class="its">${Object.values(st.items||{}).map(it=>`${esc(it.name)}: <b>${it.qty}</b>`).join(" · ")} · ${t("totalQty")}: <b>${st.totalQty}</b></div>
+      <div class="its">${Object.keys(st.items||{}).length>1
+        ? `<div class="lbl" style="margin-bottom:6px;font-weight:700">${t("perItem2")}</div>`+Object.entries(st.items).map(([k,it])=>{const sg2=itemStage(st,k);
+            return `<div class="irow2"><span>${esc(it.name)} <b>×${it.qty}</b></span><span class="ist ${sg2}">${stageIcon[sg2]} ${esc(t(sg2))}</span></div>`}).join("")
+          +`<div style="margin-top:6px">${t("totalQty")}: <b>${st.totalQty}</b></div>`
+        : `${Object.values(st.items||{}).map(it=>`${esc(it.name)}: <b>${it.qty}</b>`).join(" · ")} · ${t("totalQty")}: <b>${st.totalQty}</b>`}</div>
     </div>`;
   }).join("") || `<div class="empty">${t("noOrders")}</div>`;
   $("trackList").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{removeMyOrder(b.dataset.rm);openTrack.ids=openTrack.ids.filter(x=>x!==b.dataset.rm);renderTrack();updateMyBtn()});
